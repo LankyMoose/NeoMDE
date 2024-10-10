@@ -6,17 +6,19 @@ export function App() {
   const displayElementRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!textAreaRef.current || !displayElementRef.current) return
-    const mde = new NeoMDE({
+    new NeoMDE({
       transformers: [
-        createTransformer("line", (context) => {
-          if (context.content.startsWith("# ")) {
-            if (context.output instanceof HTMLElement) {
-              context.output.classList.add("something")
-              return context
-            }
-            context.output = document.createElement("h1")
+        createTransformer("line", (ctx) => {
+          if (ctx.content.startsWith("- ")) {
+            ctx.output = document.createElement("li")
           }
-          return context
+          return ctx
+        }),
+        createTransformer("block", (ctx) => {
+          if (ctx.children.every((n) => n.nodeName.toLowerCase() === "li")) {
+            ctx.output = document.createElement("ul")
+          }
+          return ctx
         }),
       ],
       textarea: textAreaRef.current,
@@ -29,7 +31,7 @@ export function App() {
   }, [])
   return (
     <div>
-      <textarea className="p-2" ref={textAreaRef} />
+      <textarea className="p-2 w-full min-h-48" ref={textAreaRef} />
       <div className="prose prose-invert" ref={displayElementRef} />
     </div>
   )
