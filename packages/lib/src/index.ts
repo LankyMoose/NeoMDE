@@ -15,16 +15,16 @@ import {
 
 export type {
   WordTransformerContext,
-  LineTransformerContext,
-  BlockTransformerContext,
-  TransformerType,
   WordTransformerCallback,
+  LineTransformerContext,
   LineTransformerCallback,
+  BlockTransformerContext,
   BlockTransformerCallback,
-  Transformer,
-  NeoMDEOptions,
   TransformerCallback,
   TransformerContext,
+  Transformer,
+  TransformerType,
+  NeoMDEOptions,
 } from "./types"
 
 export { createTransformer } from "./transformer.js"
@@ -37,6 +37,10 @@ export class NeoMDE {
     block: Transformer<"block">[]
     line: Transformer<"line">[]
     word: Transformer<"word">[]
+  } = {
+    block: [],
+    line: [],
+    word: [],
   }
   #textarea: HTMLTextAreaElement
   constructor(options: NeoMDEOptions) {
@@ -46,12 +50,6 @@ export class NeoMDE {
         block: [...DEFAULT_TRANSFORMERS.filter((t) => t.type === "block")],
         line: [...DEFAULT_TRANSFORMERS.filter((t) => t.type === "line")],
         word: [...DEFAULT_TRANSFORMERS.filter((t) => t.type === "word")],
-      }
-    } else {
-      this.#transformers = {
-        block: [],
-        line: [],
-        word: [],
       }
     }
     if (options.transformers) {
