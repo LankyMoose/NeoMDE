@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "kaioken"
-import { NeoMDE, NeoMDEOptions } from "neo-mde"
+import { createTransformer, NeoMDE } from "neo-mde"
 
 export function App() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
@@ -7,8 +7,21 @@ export function App() {
   useEffect(() => {
     if (!textAreaRef.current || !displayElementRef.current) return
     const mde = new NeoMDE({
+      transformers: [
+        createTransformer("line", (context) => {
+          if (context.content.startsWith("# ")) {
+            if (context.output instanceof HTMLElement) {
+              context.output.classList.add("something")
+              return context
+            }
+            context.output = document.createElement("h1")
+          }
+          return context
+        }),
+      ],
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
+      initialContent: ``,
     })
     return () => {
       //mde.destroy()

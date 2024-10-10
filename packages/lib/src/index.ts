@@ -1,3 +1,42 @@
+const BLOCK_ELEMENTS = [
+  "address",
+  "article",
+  "aside",
+  "blockquote",
+  "canvas",
+  "dd",
+  "div",
+  "dl",
+  "dt",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "li",
+  "main",
+  "nav",
+  "noscript",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "ul",
+]
+
+export function isBlockElement(node: Node) {
+  return BLOCK_ELEMENTS.indexOf(node.nodeName.toLowerCase()) > -1
+}
+
 export type WordTransformerContext = {
   content: string
   output?: Element | Text
@@ -5,11 +44,13 @@ export type WordTransformerContext = {
 
 export type LineTransformerContext = {
   content: string
+  children: Node[]
   output?: Element | Text
 }
 
 export type BlockTransformerContext = {
   lines: string[]
+  children: Node[]
   output?: Element
 }
 
@@ -70,18 +111,20 @@ export function createTransformer<T extends TransformerType>(
 
 const defaultTransformers: Transformers = {
   block: [
-    createTransformer("block", (context) => {
-      context.output = document.createElement("p")
-      return context
+    createTransformer("block", (ctx) => {
+      if (ctx.children.some(isBlockElement)) {
+        return ctx
+      }
+      ctx.output = document.createElement("p")
+      return ctx
     }),
   ],
   line: [
-    createTransformer("line", (context) => {
-      if (context.content.startsWith("# ")) {
-        context.output = document.createElement("h1")
-        context.content = context.content.slice(2)
+    createTransformer("line", (ctx) => {
+      if (ctx.content.startsWith("# ")) {
+        ctx.output = document.createElement("h1")
       }
-      return context
+      return ctx
     }),
   ],
   word: [
@@ -100,7 +143,7 @@ export class NeoMDE {
   #transformers: Transformers
   #textarea: HTMLTextAreaElement
   constructor(options: NeoMDEOptions) {
-    this.#content = options.initialContent || ""
+    this.#content = options.initialContent?.trim() || ""
     this.#transformers = {
       block: [...defaultTransformers.block],
       line: [...defaultTransformers.line],
@@ -108,7 +151,7 @@ export class NeoMDE {
     }
     if (options.transformers) {
       for (const transformer of options.transformers) {
-        this.#transformers[transformer.type].push(transformer.transform as any)
+        this.#transformers[transformer.type].push(transformer as any)
       }
     }
     this.#output = []
@@ -133,20 +176,31 @@ export class NeoMDE {
     return this.#content
   }
   public setContent(content: string) {
+    if (this.#content === content) {
+      return
+    }
     this.#content = content
     this.render()
   }
 
   private render() {
-    const blocks: Block[] = [{ lines: [] }]
+    if (this.#content.trim() === "") {
+      this.#output = []
+      this.#displayElement.innerHTML = ""
+      return
+    }
+    const blocks: Block[] = []
     const lines: Line[] = this.#content
       .split("\n")
       .map((line) => ({ content: line + "\n" }))
-
+    console.log("lines", lines, this.#content)
     for (const line of lines) {
       if (line.content.trim() === "") {
         blocks.push({ lines: [] })
       } else {
+        if (blocks.length === 0) {
+          blocks.push({ lines: [] })
+        }
         const block = blocks[blocks.length - 1]
         block.lines.push(line)
       }
@@ -179,12 +233,22 @@ export class NeoMDE {
         transformedLines.push(transformedLine)
       }
 
-      const blockNode = this.transformBlock(
+      const { output: transformedBlockOutput } = this.transformBlock(
         block.lines,
         this.#transformers.block,
         transformedLines
       )
-      output.push(blockNode)
+      if (Array.isArray(transformedBlockOutput)) {
+        output.push(
+          ...transformedBlockOutput
+            .map((line) =>
+              Array.isArray(line.output) ? line.output : [line.output]
+            )
+            .flat()
+        )
+      } else {
+        output.push(transformedBlockOutput)
+      }
     }
 
     this.#output = output
@@ -215,6 +279,7 @@ export class NeoMDE {
       (ctx, { transform }) => transform(ctx),
       {
         content,
+        children,
         output: undefined,
       }
     )
@@ -232,27 +297,31 @@ export class NeoMDE {
     lines: Line[],
     transformers: Transformer<"block">[],
     children: TransformedLine[]
-  ): Node {
+  ): TransformedBlock {
     const transformed = transformers.reduce<BlockTransformerContext>(
       (ctx, { transform }) => transform(ctx),
       {
         lines: lines.map((line) => line.content),
+        children: children.map((line) => line.output).flat(),
         output: undefined,
       }
     )
 
-    if (!transformed.output) {
-      transformed.output = document.createElement("p")
-    }
-    for (const line of children) {
-      transformed.output.append(
-        ...(Array.isArray(line.output) ? line.output : [line.output])
-      )
+    if (transformed.output) {
+      for (const line of children) {
+        transformed.output.append(
+          ...(Array.isArray(line.output) ? line.output : [line.output])
+        )
+      }
+      transformed.output.normalize()
+      return {
+        output: transformed.output,
+      }
     }
 
-    transformed.output.normalize()
-
-    return transformed.output
+    return {
+      output: children,
+    }
   }
 }
 
@@ -262,6 +331,10 @@ type Line = {
 
 type TransformedLine = {
   output: Node | Node[]
+}
+
+type TransformedBlock = {
+  output: Node | TransformedLine[]
 }
 
 type Block = {
