@@ -1,4 +1,4 @@
-# **%PACKAGE-NAME%**
+# **neo-mde**
 
 #### _An awesome new package._
 
