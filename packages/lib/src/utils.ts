@@ -1,0 +1,38 @@
+const BLOCK_ELEMENTS = [
+  "address",
+  "article",
+  "aside",
+  "blockquote",
+  "canvas",
+  "dd",
+  "div",
+  "dl",
+  "dt",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "li",
+  "main",
+  "nav",
+  "noscript",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "ul",
+]
+
+export function isBlockElement(node: Node) {
+  return BLOCK_ELEMENTS.indexOf(node.nodeName.toLowerCase()) > -1
+}

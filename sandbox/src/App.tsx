@@ -8,15 +8,13 @@ export function App() {
     if (!textAreaRef.current || !displayElementRef.current) return
     new NeoMDE({
       transformers: [
-        createTransformer("line", (ctx) => {
-          if (ctx.content.startsWith("- ")) {
-            ctx.output = document.createElement("li")
-          }
-          return ctx
-        }),
-        createTransformer("block", (ctx) => {
-          if (ctx.children.every((n) => n.nodeName.toLowerCase() === "li")) {
-            ctx.output = document.createElement("ul")
+        createTransformer("word", (ctx) => {
+          if (
+            ctx.content.startsWith("**") &&
+            ctx.content.trimEnd().endsWith("**")
+          ) {
+            ctx.output = document.createElement("strong")
+            ctx.output.textContent = ctx.content.trimEnd().slice(2, -2)
           }
           return ctx
         }),
