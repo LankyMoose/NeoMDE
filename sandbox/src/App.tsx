@@ -26,6 +26,7 @@ export function App() {
 
 > _test blockquote_
 
+---
 
 \`\`\`
 console.log("hello world")

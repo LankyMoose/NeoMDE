@@ -37,6 +37,11 @@ const DEFAULT_TRANSFORMERS = {
     ctx.parent = { node: document.createElement("blockquote") }
     ctx.children = [(ctx.children[0] as Text).splitText(2)]
   }),
+  HR_LINE: createLineTransformer((ctx) => {
+    if (!ctx.line.content.startsWith("---")) return
+    ctx.parent = { node: document.createElement("hr") }
+    ctx.children = []
+  }),
   // wrap lines in li tags if they start with "- ", handle checkboxes
   LIST_LINE: createLineTransformer((ctx) => {
     if (ctx.line.content.startsWith("- ")) {
@@ -175,6 +180,7 @@ export const GENERIC_BLOCK_TRANSFORMERS = [
   DEFAULT_TRANSFORMERS.LIST_BLOCK,
   DEFAULT_TRANSFORMERS.IMAGE_LINE,
   DEFAULT_TRANSFORMERS.BLOCKQUOTE_LINE,
+  DEFAULT_TRANSFORMERS.HR_LINE,
   Object.values(DEFAULT_TRANSFORMERS.TEXT),
 ]
 export const CODE_BLOCK_TRANSFORMERS = [DEFAULT_TRANSFORMERS.CODE_BLOCK]
