@@ -36,10 +36,7 @@ export type NeoMDEOptions = {
   textarea: HTMLTextAreaElement
   displayElement: Element
   initialContent?: string
-  transformers?: (
-    | Transformer<TransformerType>
-    | Transformer<TransformerType>[]
-  )[]
+  blockProviders?: (BlockProvider | BlockProvider[])[]
 }
 
 export type TransformerCallback<T extends TransformerType> = T extends "block"
@@ -70,6 +67,9 @@ export type TransformedBlock = {
 }
 
 export type Block = {
+  startLine: Line
+  endLine?: Line
+  provider: BlockProvider
   lines: Line[]
 }
 
@@ -85,4 +85,24 @@ export type NeoEventCallback<T extends NeoEvent> = T extends "render"
 export type NeoEventListener<T extends NeoEvent> = {
   callback: NeoEventCallback<T>
   once?: boolean
+}
+
+export type BlockProviderOptions = {
+  start: string
+  end: string
+  /** only applicable if start is the same as end. */
+  useEndOfPrevAsStartOfNext?: boolean
+
+  transformers: (
+    | Transformer<TransformerType>
+    | Transformer<TransformerType>[]
+  )[]
+}
+
+export type BlockProvider = {
+  start: string
+  end: string
+  /** only applicable if start is the same as end. */
+  useEndOfPrevAsStartOfNext?: boolean
+  transformers: Transformer<TransformerType>[]
 }

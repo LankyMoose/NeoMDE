@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "kaioken"
-import { createDefaultTransformers, NeoMDE } from "neo-mde"
+import { NeoMDE } from "neo-mde"
+import defaultBlockProviders from "neo-mde/defaults"
 
 export function App() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
@@ -7,7 +8,7 @@ export function App() {
   useEffect(() => {
     if (!textAreaRef.current || !displayElementRef.current) return
     new NeoMDE({
-      transformers: [createDefaultTransformers()],
+      blockProviders: [defaultBlockProviders()],
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
       initialContent: `
@@ -21,6 +22,10 @@ export function App() {
 
 \`\`\`
 console.log("hello world")
+
+function hello() {
+  console.log("hello world")
+}
 \`\`\`
 
 hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁

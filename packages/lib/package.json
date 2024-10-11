@@ -13,6 +13,28 @@
     "build": "rm -rf dist && tsc",
     "dev": "tsc --watch"
   },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./defaults": {
+      "require": {
+        "types": "./dist/defaults.d.ts",
+        "default": "./dist/defaults.js"
+      },
+      "import": {
+        "types": "./dist/defaults.d.ts",
+        "default": "./dist/defaults.js"
+      }
+    }
+  },
   "keywords": [],
   "author": "LankyMoose",
   "license": "ISC"
