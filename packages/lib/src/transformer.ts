@@ -40,13 +40,15 @@ const DEFAULT_TRANSFORMERS = {
     if (!ctx.line.content.startsWith("- ")) return
     ctx.parent = { node: document.createElement("li") }
     const children: Node[] = []
-    if (ctx.line.content.startsWith("- [] ")) {
+    if (ctx.line.content.startsWith("- [ ] ")) {
       const checkbox = document.createElement("input")
       checkbox.type = "checkbox"
       checkbox.checked = false
 
       const handleChange = () => {
-        ctx.instance.insertContent(ctx.line.start + 3, "x")
+        const start = ctx.line.start + 3
+        const end = ctx.line.start + 4
+        ctx.instance.setContentAtRange({ start, end }, "x")
       }
       checkbox.addEventListener("change", handleChange)
       ctx.instance.once("beforerender", () => {
@@ -54,7 +56,7 @@ const DEFAULT_TRANSFORMERS = {
       })
 
       children.push(checkbox)
-      children.push(document.createTextNode(ctx.line.content.substring(4)))
+      children.push(document.createTextNode(ctx.line.content.substring(5)))
     } else if (ctx.line.content.startsWith("- [x] ")) {
       const checkbox = document.createElement("input")
       checkbox.type = "checkbox"
@@ -63,7 +65,7 @@ const DEFAULT_TRANSFORMERS = {
       const handleChange = () => {
         const start = ctx.line.start + 3
         const end = ctx.line.start + 4
-        ctx.instance.setContentAtRange({ start, end }, "")
+        ctx.instance.setContentAtRange({ start, end }, " ")
       }
 
       checkbox.addEventListener("change", handleChange)

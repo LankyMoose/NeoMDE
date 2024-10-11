@@ -16,16 +16,16 @@ export function App() {
 - _**bold italics**_
 - [link](https://github.com/LankyMoose/neo-mde)
 - \`some code\`
-- [] checkbox
+- [ ] checkbox
 - [x] checked checkbox
-
-![image](favicon.svg)
 
 \`\`\`
 console.log("hello world")
 \`\`\`
 
 hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
+
+![image](http://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg) banana
 `,
     })
     return () => {
