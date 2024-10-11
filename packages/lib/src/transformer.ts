@@ -18,6 +18,7 @@ export const MD_REGEX = {
   STRIKE: /~~(.*?)~~/,
   CODE: /`([^`]+)`/,
   LINK: /\[(.*?)\]\((.*?)\)/,
+  IMAGE: /!\[Image\]\((.*?)\)\s*(.*)/,
 }
 
 const DEFAULT_TRANSFORMERS = {
@@ -98,6 +99,16 @@ const DEFAULT_TRANSFORMERS = {
       ctx.children = []
     }
   }),
+  // similar to TEXT.LINK - parse lines in the format of ![Image](link)
+  IMAGE_LINE: createLineTransformer((ctx) => {
+    if (!ctx.line.content.startsWith("![")) return
+    const match = MD_REGEX.IMAGE.exec(ctx.line.content)
+    if (!match) return
+    const img = document.createElement("img")
+    img.src = match[1]
+    img.title = match[2] ?? undefined
+    ctx.parent = { node: img }
+  }),
   // wrap code blocks in pre tags
   CODE_BLOCK: createBlockTransformer((ctx) => {
     if (ctx.lines.length === 0) return
@@ -159,6 +170,7 @@ export const createDefaultTransformers = (): Transformer<any>[] => [
   DEFAULT_TRANSFORMERS.PARAGRAPH_BLOCK,
   DEFAULT_TRANSFORMERS.CODE_BLOCK,
   DEFAULT_TRANSFORMERS.CODE_BLOCK_LINE,
+  DEFAULT_TRANSFORMERS.IMAGE_LINE,
   ...Object.values(DEFAULT_TRANSFORMERS.TEXT),
 ]
 

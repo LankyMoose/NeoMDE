@@ -11,9 +11,19 @@ export function App() {
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
       initialContent: `
+### test _italic in heading_
+
+- _**bold italics**_
+- [link](https://github.com/LankyMoose/neo-mde)
+- \`some code\`
+- [] checkbox
+- [x] checked checkbox
+
 \`\`\`
 console.log("hello world")
 \`\`\`
+
+hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
 `,
     })
     return () => {
