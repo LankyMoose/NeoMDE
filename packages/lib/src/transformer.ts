@@ -99,6 +99,7 @@ export const DEFAULT_TRANSFORMERS: Transformer<any>[] = [
   createLineTransformer((ctx) => {
     if (ctx.content.startsWith("- ")) {
       ctx.parentNode = document.createElement("li")
+      ctx.children = [(ctx.children[0] as Text).splitText(2)]
     }
     return ctx
   }),
@@ -141,7 +142,7 @@ export function transformLine(
   )
 
   if (transformed.parentNode instanceof Element) {
-    transformed.parentNode.append(...children)
+    transformed.parentNode.append(...transformed.children)
     transformed.parentNode.normalize()
   }
 
