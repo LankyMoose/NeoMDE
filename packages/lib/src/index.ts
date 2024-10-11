@@ -24,7 +24,11 @@ export type {
   NeoMDEOptions,
 } from "./types"
 
-export { createBlockTransformer, createLineTransformer } from "./transformer.js"
+export {
+  createBlockTransformer,
+  createLineTransformer,
+  createRegexTransformer,
+} from "./transformer.js"
 
 export class NeoMDE {
   #content: string

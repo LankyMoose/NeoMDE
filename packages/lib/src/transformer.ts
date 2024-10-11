@@ -13,126 +13,66 @@ import { isBlockElement } from "./utils"
 const REGEX = {
   BOLD: /\*\*(.*?)\*\*/g,
   ITALIC: /_(.*?)_/,
-  BOLD_ITALIC: /_\*\*(.*?)\*\*_/,
+  ITALIC_BOLD: /_\*\*(.*?)\*\*_/,
   STRIKE: /~~(.*?)~~/,
   CODE: /`(.*?)`/,
   LINK: /\[(.*?)\]\((.*?)\)/,
 }
+export function createRegexTransformer(
+  regexp: RegExp,
+  onMatched: (match: RegExpMatchArray) => Node
+): Transformer<"line"> {
+  return createLineTransformer((ctx) => {
+    for (let i = 0; i < ctx.children.length; i++) {
+      const child = ctx.children[i]
+      if (child instanceof Text && child.textContent) {
+        let match: RegExpMatchArray | null
+        while ((match = regexp.exec(child.textContent))) {
+          const node = child.splitText(match.index!)
+          const nextSibling = node.splitText(match[0].length)
+          const wrapper = onMatched(match)
+          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
+          i++
+        }
+      }
+    }
+    return ctx
+  })
+}
 
 export const DEFAULT_TRANSFORMERS: Transformer<any>[] = [
-  // find _**bold italic text**_ and wrap it in a <b> tag and a <i> tag
-  createLineTransformer((ctx) => {
-    for (let i = 0; i < ctx.children.length; i++) {
-      const child = ctx.children[i]
-      if (child instanceof Text && child.textContent) {
-        let match: RegExpMatchArray | null
-        while ((match = REGEX.BOLD_ITALIC.exec(child.textContent))) {
-          const node = child.splitText(match.index!)
-          const wrapper = document.createElement("b")
-          const inner = document.createElement("i")
-          const nextSibling = node.splitText(match[0].length)
-          inner.appendChild(document.createTextNode(match[1]))
-          wrapper.appendChild(inner)
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
-          i++
-        }
-      }
-    }
-    return ctx
+  createRegexTransformer(REGEX.ITALIC_BOLD, (match) => {
+    const wrapper = document.createElement("b")
+    const inner = document.createElement("i")
+    inner.appendChild(document.createTextNode(match[1]))
+    wrapper.appendChild(inner)
+    return wrapper
   }),
-  // find **bold text** and wrap it in a <b> tag and a <i> tag
-  createLineTransformer((ctx) => {
-    for (let i = 0; i < ctx.children.length; i++) {
-      const child = ctx.children[i]
-      if (child instanceof Text && child.textContent) {
-        let match: RegExpMatchArray | null
-        while ((match = REGEX.BOLD.exec(child.textContent))) {
-          const node = child.splitText(match.index!)
-          const wrapper = document.createElement("b")
-          const nextSibling = node.splitText(match[0].length)
-          wrapper.appendChild(document.createTextNode(match[1]))
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
-          i++
-        }
-      }
-    }
-    return ctx
+  createRegexTransformer(REGEX.BOLD, (match) => {
+    const wrapper = document.createElement("b")
+    wrapper.appendChild(document.createTextNode(match[1]))
+    return wrapper
   }),
-
-  // find ~~strikethrough text~~ and wrap it in a <del> tag
-  createLineTransformer((ctx) => {
-    for (let i = 0; i < ctx.children.length; i++) {
-      const child = ctx.children[i]
-      if (child instanceof Text && child.textContent) {
-        let match: RegExpMatchArray | null
-        while ((match = REGEX.STRIKE.exec(child.textContent))) {
-          const node = child.splitText(match.index!)
-          const wrapper = document.createElement("del")
-          const nextSibling = node.splitText(match[0].length)
-          wrapper.appendChild(document.createTextNode(match[1]))
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
-          i++
-        }
-      }
-    }
-    return ctx
+  createRegexTransformer(REGEX.ITALIC, (match) => {
+    const wrapper = document.createElement("i")
+    wrapper.appendChild(document.createTextNode(match[1]))
+    return wrapper
   }),
-
-  // find _italic text_ and wrap it in a <i> tag
-  createLineTransformer((ctx) => {
-    for (let i = 0; i < ctx.children.length; i++) {
-      const child = ctx.children[i]
-      if (child instanceof Text && child.textContent) {
-        let match: RegExpMatchArray | null
-        while ((match = REGEX.ITALIC.exec(child.textContent))) {
-          const node = child.splitText(match.index!)
-          const wrapper = document.createElement("i")
-          const nextSibling = node.splitText(match[0].length)
-          wrapper.appendChild(document.createTextNode(match[1]))
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
-          i++
-        }
-      }
-    }
-    return ctx
+  createRegexTransformer(REGEX.STRIKE, (match) => {
+    const wrapper = document.createElement("del")
+    wrapper.appendChild(document.createTextNode(match[1]))
+    return wrapper
   }),
-  // find `inline code text` and wrap it in a <code> tag
-  createLineTransformer((ctx) => {
-    for (let i = 0; i < ctx.children.length; i++) {
-      const child = ctx.children[i]
-      if (child instanceof Text && child.textContent) {
-        let match: RegExpMatchArray | null
-        while ((match = REGEX.CODE.exec(child.textContent))) {
-          const node = child.splitText(match.index!)
-          const wrapper = document.createElement("code")
-          const nextSibling = node.splitText(match[0].length)
-          wrapper.appendChild(document.createTextNode(match[1]))
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
-          i++
-        }
-      }
-    }
-    return ctx
+  createRegexTransformer(REGEX.CODE, (match) => {
+    const wrapper = document.createElement("code")
+    wrapper.appendChild(document.createTextNode(match[1]))
+    return wrapper
   }),
-
-  // find [link text](https://domain.com) and wrap it in a <a> tag
-  createLineTransformer((ctx) => {
-    for (let i = 0; i < ctx.children.length; i++) {
-      const child = ctx.children[i]
-      if (child instanceof Text && child.textContent) {
-        let match: RegExpMatchArray | null
-        while ((match = REGEX.LINK.exec(child.textContent))) {
-          const node = child.splitText(match.index!)
-          const wrapper = document.createElement("a")
-          const nextSibling = node.splitText(match[0].length)
-          wrapper.appendChild(document.createTextNode(match[1]))
-          wrapper.href = match[2]
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
-          i++
-        }
-      }
-    }
-    return ctx
+  createRegexTransformer(REGEX.LINK, (match) => {
+    const wrapper = document.createElement("a")
+    wrapper.appendChild(document.createTextNode(match[1]))
+    wrapper.href = match[2]
+    return wrapper
   }),
   // wrap blocks in p tags if they don't already contain a block element
   createBlockTransformer((ctx) => {
