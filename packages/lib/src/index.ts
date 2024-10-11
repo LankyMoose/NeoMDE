@@ -4,6 +4,9 @@ import {
   Block,
   Line,
   TransformedLine,
+  NeoEvent,
+  NeoEventListener,
+  NeoEventCallback,
 } from "./types"
 
 import { transformBlock, transformLine } from "./transformer.js"
@@ -28,7 +31,12 @@ export {
   MD_REGEX,
 } from "./transformer.js"
 
+export const createNeoMDE = (options: NeoMDEOptions) => new NeoMDE(options)
+
 export class NeoMDE {
+  #listeners: {
+    [key in NeoEvent]: NeoEventListener<key>[]
+  }
   #content: string
   #output: Node[]
   #displayElement: Element
@@ -38,6 +46,11 @@ export class NeoMDE {
   }
   #textarea: HTMLTextAreaElement
   constructor(options: NeoMDEOptions) {
+    this.#listeners = {
+      beforerender: [],
+      render: [],
+      change: [],
+    }
     this.#content = options.initialContent?.trim() || ""
     this.#transformers = {
       block: [],
@@ -62,6 +75,22 @@ export class NeoMDE {
     this.render()
   }
 
+  public on<T extends NeoEvent>(type: T, callback: NeoEventCallback<T>) {
+    this.#listeners[type].push({ callback })
+  }
+  public once<T extends NeoEvent>(type: T, callback: NeoEventCallback<T>) {
+    this.#listeners[type].push({ callback, once: true })
+  }
+  public off<T extends NeoEvent>(type: T, callback: NeoEventCallback<T>) {
+    const listeners = this.#listeners[type]
+    const idx = listeners.findIndex(
+      (listener) => listener.callback === callback
+    )
+    if (idx !== -1) {
+      listeners.splice(idx, 1)
+    }
+  }
+
   public getContent() {
     return this.#content
   }
@@ -77,6 +106,10 @@ export class NeoMDE {
     }
     this.#content = content
     this.#textarea.value = content
+    for (const { callback, once } of this.#listeners.change) {
+      callback(this.#content)
+      if (once) this.off("change", callback)
+    }
     this.render()
   }
   public insertContent(offset: number, content: string) {
@@ -111,10 +144,19 @@ export class NeoMDE {
     })
   }
 
-  // @ts-ignore
-  private onBeforeRender() {}
-
   private render() {
+    for (const { callback, once } of this.#listeners.beforerender) {
+      callback()
+      if (once) this.off("beforerender", callback)
+    }
+    this.render_impl()
+    for (const { callback, once } of this.#listeners.render) {
+      callback()
+      if (once) this.off("render", callback)
+    }
+  }
+
+  private render_impl() {
     if (this.#content.trim() === "") {
       this.#output = []
       this.#displayElement.innerHTML = ""

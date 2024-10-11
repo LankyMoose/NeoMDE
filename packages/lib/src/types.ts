@@ -3,15 +3,20 @@ import type { NeoMDE } from "./index"
 export type LineTransformerContext = {
   line: Line
   children: Node[]
-  parentNode?: Element | Text
+  parent?: ParentWithChildrenSlot
   instance: NeoMDE
 }
 
 export type BlockTransformerContext = {
   lines: Line[]
   children: Node[]
-  parentNode?: Element
+  parent?: ParentWithChildrenSlot
   instance: NeoMDE
+}
+
+export type ParentWithChildrenSlot = {
+  node: Element
+  slot?: Element
 }
 
 export type TransformerType = "block" | "line"
@@ -66,4 +71,18 @@ export type TransformedBlock = {
 
 export type Block = {
   lines: Line[]
+}
+
+export type NeoEvent = "render" | "beforerender" | "change"
+export type NeoEventCallback<T extends NeoEvent> = T extends "render"
+  ? () => void
+  : T extends "beforerender"
+  ? () => void
+  : T extends "change"
+  ? (value: string) => void
+  : never
+
+export type NeoEventListener<T extends NeoEvent> = {
+  callback: NeoEventCallback<T>
+  once?: boolean
 }

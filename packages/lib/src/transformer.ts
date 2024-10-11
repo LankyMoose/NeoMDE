@@ -30,39 +30,44 @@ const DEFAULT_TRANSFORMERS = {
       }
     }
     if (i > 0) {
-      ctx.parentNode = document.createElement(`h${i}`)
+      ctx.parent = { node: document.createElement(`h${i}`) }
       ctx.children = [(ctx.children[0] as Text).splitText(i)]
     }
   }),
   // wrap lines in li tags if they start with "- ", handle checkboxes
   LIST_LINE: createLineTransformer((ctx) => {
     if (!ctx.line.content.startsWith("- ")) return
-    ctx.parentNode = document.createElement("li")
+    ctx.parent = { node: document.createElement("li") }
     const children: Node[] = []
-    if (ctx.line.content.substring(1, 5) === " [] ") {
+    if (ctx.line.content.startsWith("- [] ")) {
       const checkbox = document.createElement("input")
       checkbox.type = "checkbox"
       checkbox.checked = false
 
-      checkbox.addEventListener("change", () => {
+      const handleChange = () => {
         ctx.instance.insertContent(ctx.line.start + 3, "x")
+      }
+      checkbox.addEventListener("change", handleChange)
+      ctx.instance.once("beforerender", () => {
+        checkbox.removeEventListener("change", handleChange)
       })
 
       children.push(checkbox)
       children.push(document.createTextNode(ctx.line.content.substring(4)))
-    } else if (ctx.line.content.substring(1, 6) === " [x] ") {
+    } else if (ctx.line.content.startsWith("- [x] ")) {
       const checkbox = document.createElement("input")
       checkbox.type = "checkbox"
       checkbox.checked = true
 
-      checkbox.addEventListener("change", () => {
-        ctx.instance.setContentAtRange(
-          {
-            start: ctx.line.start + 3,
-            end: ctx.line.start + 4,
-          },
-          ""
-        )
+      const handleChange = () => {
+        const start = ctx.line.start + 3
+        const end = ctx.line.start + 4
+        ctx.instance.setContentAtRange({ start, end }, "")
+      }
+
+      checkbox.addEventListener("change", handleChange)
+      ctx.instance.once("beforerender", () => {
+        checkbox.removeEventListener("change", handleChange)
       })
 
       children.push(checkbox)
@@ -78,7 +83,7 @@ const DEFAULT_TRANSFORMERS = {
       ctx.children.length > 0 &&
       ctx.children.every((n) => n.nodeName.toLowerCase() === "li")
     ) {
-      ctx.parentNode = document.createElement("ul")
+      ctx.parent = { node: document.createElement("ul") }
     }
   }),
   // wrap blocks in p tags if they don't already contain a block element
@@ -86,7 +91,7 @@ const DEFAULT_TRANSFORMERS = {
     if (ctx.children.some(isBlockElement)) {
       return
     }
-    ctx.parentNode = document.createElement("p")
+    ctx.parent = { node: document.createElement("p") }
   }),
   CODE_BLOCK_LINE: createLineTransformer((ctx) => {
     if (ctx.line.content === "```") {
@@ -95,13 +100,20 @@ const DEFAULT_TRANSFORMERS = {
   }),
   // wrap code blocks in pre tags
   CODE_BLOCK: createBlockTransformer((ctx) => {
+    if (ctx.lines.length === 0) return
     if (
       ctx.lines[0].content.trim() !== "```" ||
       ctx.lines[ctx.lines.length - 1].content.trim() !== "```"
     ) {
       return
     }
-    ctx.parentNode = document.createElement("pre")
+
+    const parentNode = document.createElement("pre")
+    const slot = parentNode.appendChild(document.createElement("code"))
+    ctx.parent = {
+      node: parentNode,
+      slot,
+    }
   }),
   TEXT: {
     ITALIC_BOLD: createTextTransformer(MD_REGEX.ITALIC_BOLD, (match) => {
@@ -199,18 +211,19 @@ export function transformLine(
     {
       line,
       children,
-      parentNode: undefined,
+      parent: undefined,
       instance,
     }
   )
 
-  if (transformed.parentNode instanceof Element) {
-    transformed.parentNode.append(...transformed.children)
-    transformed.parentNode.normalize()
+  if (transformed.parent?.node) {
+    const mountNode = transformed.parent.slot ?? transformed.parent.node
+    mountNode.append(...transformed.children)
+    mountNode.normalize()
   }
 
   return {
-    output: transformed.parentNode ?? transformed.children,
+    output: transformed.parent?.node ?? transformed.children,
   }
 }
 
@@ -225,20 +238,21 @@ export function transformBlock(
     {
       lines,
       children: children.map((line) => line.output).flat(),
-      parentNode: undefined,
+      parent: undefined,
       instance,
     }
   )
 
-  if (transformed.parentNode) {
+  if (transformed.parent?.node) {
+    const mountNode = transformed.parent.slot ?? transformed.parent.node
     for (const line of children) {
-      transformed.parentNode.append(
+      mountNode.append(
         ...(Array.isArray(line.output) ? line.output : [line.output])
       )
     }
-    transformed.parentNode.normalize()
+    mountNode.normalize()
     return {
-      output: transformed.parentNode,
+      output: transformed.parent.node,
     }
   }
 
