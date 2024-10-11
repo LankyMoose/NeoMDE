@@ -20,6 +20,13 @@ export function App() {
 - [ ] checkbox
 - [x] checked checkbox
 
+1. list item
+2. list item
+3. list item
+
+> _test blockquote_
+
+
 \`\`\`
 console.log("hello world")
 

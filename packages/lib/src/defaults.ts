@@ -15,6 +15,7 @@ export const MD_REGEX = {
   CODE: /`([^`]+)`/,
   LINK: /\[(.*?)\]\((.*?)\)/,
   IMAGE: /!\[IMAGE\]\((.*?)\)\s*(.*)/i,
+  ORDERED_LIST_ITEM: /(\d+)\. (.*)/,
 }
 
 const DEFAULT_TRANSFORMERS = {
@@ -31,50 +32,62 @@ const DEFAULT_TRANSFORMERS = {
       ctx.children = [(ctx.children[0] as Text).splitText(i)]
     }
   }),
+  BLOCKQUOTE_LINE: createLineTransformer((ctx) => {
+    if (!ctx.line.content.startsWith("> ")) return
+    ctx.parent = { node: document.createElement("blockquote") }
+    ctx.children = [(ctx.children[0] as Text).splitText(2)]
+  }),
   // wrap lines in li tags if they start with "- ", handle checkboxes
   LIST_LINE: createLineTransformer((ctx) => {
-    if (!ctx.line.content.startsWith("- ")) return
-    ctx.parent = { node: document.createElement("li") }
-    const children: Node[] = []
-    if (ctx.line.content.startsWith("- [ ] ")) {
-      const checkbox = document.createElement("input")
-      checkbox.type = "checkbox"
-      checkbox.checked = false
+    if (ctx.line.content.startsWith("- ")) {
+      ctx.parent = { node: document.createElement("li") }
+      const children: Node[] = []
+      if (ctx.line.content.startsWith("- [ ] ")) {
+        const checkbox = document.createElement("input")
+        checkbox.type = "checkbox"
+        checkbox.checked = false
 
-      const handleChange = () => {
-        const start = ctx.line.start + 3
-        const end = ctx.line.start + 4
-        ctx.instance.setContentAtRange({ start, end }, "x")
+        const handleChange = () => {
+          const start = ctx.line.start + 3
+          const end = ctx.line.start + 4
+          ctx.instance.setContentAtRange({ start, end }, "x")
+        }
+        checkbox.addEventListener("change", handleChange)
+        ctx.instance.once("beforerender", () => {
+          checkbox.removeEventListener("change", handleChange)
+        })
+
+        children.push(checkbox)
+        children.push(document.createTextNode(ctx.line.content.substring(5)))
+      } else if (ctx.line.content.startsWith("- [x] ")) {
+        const checkbox = document.createElement("input")
+        checkbox.type = "checkbox"
+        checkbox.checked = true
+
+        const handleChange = () => {
+          const start = ctx.line.start + 3
+          const end = ctx.line.start + 4
+          ctx.instance.setContentAtRange({ start, end }, " ")
+        }
+
+        checkbox.addEventListener("change", handleChange)
+        ctx.instance.once("beforerender", () => {
+          checkbox.removeEventListener("change", handleChange)
+        })
+
+        children.push(checkbox)
+        children.push(document.createTextNode(ctx.line.content.substring(5)))
+      } else {
+        children.push(document.createTextNode(ctx.line.content.substring(2)))
       }
-      checkbox.addEventListener("change", handleChange)
-      ctx.instance.once("beforerender", () => {
-        checkbox.removeEventListener("change", handleChange)
-      })
-
-      children.push(checkbox)
-      children.push(document.createTextNode(ctx.line.content.substring(5)))
-    } else if (ctx.line.content.startsWith("- [x] ")) {
-      const checkbox = document.createElement("input")
-      checkbox.type = "checkbox"
-      checkbox.checked = true
-
-      const handleChange = () => {
-        const start = ctx.line.start + 3
-        const end = ctx.line.start + 4
-        ctx.instance.setContentAtRange({ start, end }, " ")
-      }
-
-      checkbox.addEventListener("change", handleChange)
-      ctx.instance.once("beforerender", () => {
-        checkbox.removeEventListener("change", handleChange)
-      })
-
-      children.push(checkbox)
-      children.push(document.createTextNode(ctx.line.content.substring(5)))
-    } else {
-      children.push(document.createTextNode(ctx.line.content.substring(2)))
+      ctx.children = children
+      return
     }
-    ctx.children = children
+    const numericPrefixMatch = MD_REGEX.ORDERED_LIST_ITEM.exec(ctx.line.content)
+    if (numericPrefixMatch === null) return
+    ctx.parent = { node: document.createElement("li") }
+    ctx.children = [document.createTextNode(numericPrefixMatch[2])]
+    return
   }),
   // wrap blocks in ul tags if they contain only li elements
   LIST_BLOCK: createBlockTransformer((ctx) => {
@@ -82,7 +95,14 @@ const DEFAULT_TRANSFORMERS = {
       ctx.children.length > 0 &&
       ctx.children.every((n) => n.nodeName.toLowerCase() === "li")
     ) {
-      ctx.parent = { node: document.createElement("ul") }
+      const firstLine = ctx.lines[0]
+      const isNumeric = MD_REGEX.ORDERED_LIST_ITEM.test(firstLine.content)
+
+      ctx.parent = {
+        node: isNumeric
+          ? document.createElement("ol")
+          : document.createElement("ul"),
+      }
     }
   }),
   // wrap blocks in p tags if they don't already contain a block element
@@ -91,11 +111,6 @@ const DEFAULT_TRANSFORMERS = {
       return
     }
     ctx.parent = { node: document.createElement("p") }
-  }),
-  CODE_BLOCK_LINE: createLineTransformer((ctx) => {
-    if (ctx.line.content === "```") {
-      ctx.children = []
-    }
   }),
   // similar to TEXT.LINK - parse lines in the format of ![Image](link)
   IMAGE_LINE: createLineTransformer((ctx) => {
@@ -154,17 +169,15 @@ const DEFAULT_TRANSFORMERS = {
 }
 
 export const GENERIC_BLOCK_TRANSFORMERS = [
+  DEFAULT_TRANSFORMERS.PARAGRAPH_BLOCK,
   DEFAULT_TRANSFORMERS.HEADING_LINE,
   DEFAULT_TRANSFORMERS.LIST_LINE,
   DEFAULT_TRANSFORMERS.LIST_BLOCK,
-  DEFAULT_TRANSFORMERS.PARAGRAPH_BLOCK,
   DEFAULT_TRANSFORMERS.IMAGE_LINE,
+  DEFAULT_TRANSFORMERS.BLOCKQUOTE_LINE,
   Object.values(DEFAULT_TRANSFORMERS.TEXT),
 ]
-export const CODE_BLOCK_TRANSFORMERS = [
-  DEFAULT_TRANSFORMERS.CODE_BLOCK,
-  DEFAULT_TRANSFORMERS.CODE_BLOCK_LINE,
-]
+export const CODE_BLOCK_TRANSFORMERS = [DEFAULT_TRANSFORMERS.CODE_BLOCK]
 
 export default function defaultBlockProviders(): BlockProvider[] {
   const codeBlockProvider = createBlockProvider({
