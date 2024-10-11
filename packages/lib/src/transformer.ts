@@ -65,7 +65,23 @@ export const createDefaultTransformers = (): Transformer<any>[] => [
   createLineTransformer((ctx) => {
     if (ctx.content.startsWith("- ")) {
       ctx.parentNode = document.createElement("li")
-      ctx.children = [(ctx.children[0] as Text).splitText(2)]
+      const children: Node[] = []
+      if (ctx.content.substring(1, 5) === " [] ") {
+        const checkbox = document.createElement("input")
+        checkbox.type = "checkbox"
+        checkbox.checked = false
+        children.push(checkbox)
+        children.push(document.createTextNode(ctx.content.substring(4)))
+      } else if (ctx.content.substring(1, 6) === " [x] ") {
+        const checkbox = document.createElement("input")
+        checkbox.type = "checkbox"
+        checkbox.checked = true
+        children.push(checkbox)
+        children.push(document.createTextNode(ctx.content.substring(5)))
+      } else {
+        children.push(document.createTextNode(ctx.content.substring(2)))
+      }
+      ctx.children = children
     }
     return ctx
   }),

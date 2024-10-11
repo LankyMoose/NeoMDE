@@ -13,9 +13,11 @@ export function App() {
       initialContent: `
 ### test _italic in heading_
 
-- a _**bold italics**_
-- b [link](https://github.com/LankyMoose/neo-mde)
-- c \`some code\`
+- _**bold italics**_
+- [link](https://github.com/LankyMoose/neo-mde)
+- \`some code\`
+- [] checkbox
+- [x] checked checkbox
 
 hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
 
