@@ -10,7 +10,7 @@ import {
 } from "./types"
 import { isBlockElement } from "./utils"
 
-const REGEX = {
+export const MD_REGEX = {
   BOLD: /\*\*(.*?)\*\*/g,
   ITALIC: /_(.*?)_/,
   ITALIC_BOLD: /_\*\*(.*?)\*\*_/,
@@ -46,7 +46,7 @@ export function createRegexTransformer(
   return createLineTransformer(doTransform)
 }
 
-export const DEFAULT_TRANSFORMERS: Transformer<any>[] = [
+export const createDefaultTransformers = (): Transformer<any>[] => [
   // wrap lines in heading tags if they start with 1-6 #s
   createLineTransformer((ctx) => {
     let i = 0
@@ -57,6 +57,7 @@ export const DEFAULT_TRANSFORMERS: Transformer<any>[] = [
     }
     if (i > 0) {
       ctx.parentNode = document.createElement(`h${i}`)
+      ctx.children = [(ctx.children[0] as Text).splitText(i)]
     }
     return ctx
   }),
@@ -79,34 +80,34 @@ export const DEFAULT_TRANSFORMERS: Transformer<any>[] = [
     return ctx
   }),
 
-  createRegexTransformer(REGEX.ITALIC_BOLD, (match) => {
+  createRegexTransformer(MD_REGEX.ITALIC_BOLD, (match) => {
     const element = document.createElement("b")
     const inner = document.createElement("i")
     inner.appendChild(document.createTextNode(match[1]))
     element.appendChild(inner)
     return element
   }),
-  createRegexTransformer(REGEX.BOLD, (match) => {
+  createRegexTransformer(MD_REGEX.BOLD, (match) => {
     const element = document.createElement("b")
     element.appendChild(document.createTextNode(match[1]))
     return element
   }),
-  createRegexTransformer(REGEX.ITALIC, (match) => {
+  createRegexTransformer(MD_REGEX.ITALIC, (match) => {
     const element = document.createElement("i")
     element.appendChild(document.createTextNode(match[1]))
     return element
   }),
-  createRegexTransformer(REGEX.STRIKE, (match) => {
+  createRegexTransformer(MD_REGEX.STRIKE, (match) => {
     const element = document.createElement("del")
     element.appendChild(document.createTextNode(match[1]))
     return element
   }),
-  createRegexTransformer(REGEX.CODE, (match) => {
+  createRegexTransformer(MD_REGEX.CODE, (match) => {
     const element = document.createElement("code")
     element.appendChild(document.createTextNode(match[1]))
     return element
   }),
-  createRegexTransformer(REGEX.LINK, (match) => {
+  createRegexTransformer(MD_REGEX.LINK, (match) => {
     const element = document.createElement("a")
     element.appendChild(document.createTextNode(match[1]))
     element.href = match[2]

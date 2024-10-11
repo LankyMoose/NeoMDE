@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "kaioken"
-import { NeoMDE } from "neo-mde"
+import { createDefaultTransformers, NeoMDE } from "neo-mde"
 
 export function App() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
@@ -7,15 +7,20 @@ export function App() {
   useEffect(() => {
     if (!textAreaRef.current || !displayElementRef.current) return
     new NeoMDE({
-      transformers: [],
-      includeDefaultTransformers: true,
+      transformers: [createDefaultTransformers()],
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
-      initialContent: `# test _hi_
-      
-      hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
-      
-      [check out this link](https://github.com/LankyMoose/neo-mde)`,
+      initialContent: `
+### test _italic in heading_
+
+- a _**bold italics**_
+- b [link](https://github.com/LankyMoose/neo-mde)
+- c \`some code\`
+
+hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
+
+
+`,
     })
     return () => {
       //mde.destroy()

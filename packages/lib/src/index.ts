@@ -6,11 +6,7 @@ import {
   TransformedLine,
 } from "./types"
 
-import {
-  DEFAULT_TRANSFORMERS,
-  transformBlock,
-  transformLine,
-} from "./transformer.js"
+import { transformBlock, transformLine } from "./transformer.js"
 
 export type {
   LineTransformerContext,
@@ -25,9 +21,11 @@ export type {
 } from "./types"
 
 export {
+  createDefaultTransformers,
   createBlockTransformer,
   createLineTransformer,
   createRegexTransformer,
+  MD_REGEX,
 } from "./transformer.js"
 
 export class NeoMDE {
@@ -44,18 +42,8 @@ export class NeoMDE {
   #textarea: HTMLTextAreaElement
   constructor(options: NeoMDEOptions) {
     this.#content = options.initialContent?.trim() || ""
-    if (options.includeDefaultTransformers) {
-      this.#transformers = {
-        block: [
-          ...DEFAULT_TRANSFORMERS.filter((t) => t.type === "block"),
-        ] as Transformer<"block">[],
-        line: [
-          ...DEFAULT_TRANSFORMERS.filter((t) => t.type === "line"),
-        ] as Transformer<"line">[],
-      }
-    }
     if (options.transformers) {
-      for (const transformer of options.transformers) {
+      for (const transformer of options.transformers.flat()) {
         this.#transformers[transformer.type].push(transformer as any)
       }
     }

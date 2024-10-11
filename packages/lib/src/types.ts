@@ -29,8 +29,10 @@ export type NeoMDEOptions = {
   textarea: HTMLTextAreaElement
   displayElement: Element
   initialContent?: string
-  transformers?: Transformer<TransformerType>[]
-  includeDefaultTransformers?: boolean
+  transformers?: (
+    | Transformer<TransformerType>
+    | Transformer<TransformerType>[]
+  )[]
 }
 
 export type TransformerCallback<T extends TransformerType> = T extends "block"
