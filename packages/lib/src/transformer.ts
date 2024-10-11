@@ -18,9 +18,10 @@ const REGEX = {
   CODE: /`(.*?)`/,
   LINK: /\[(.*?)\]\((.*?)\)/,
 }
+
 export function createRegexTransformer(
   regexp: RegExp,
-  onMatched: (match: RegExpMatchArray) => Node
+  createElementFromMatch: (match: RegExpMatchArray) => Element
 ): Transformer<"line"> {
   return createLineTransformer((ctx) => {
     for (let i = 0; i < ctx.children.length; i++) {
@@ -30,8 +31,8 @@ export function createRegexTransformer(
         while ((match = regexp.exec(child.textContent))) {
           const node = child.splitText(match.index!)
           const nextSibling = node.splitText(match[0].length)
-          const wrapper = onMatched(match)
-          ctx.children.splice(i + 1, 0, wrapper, nextSibling)
+          const element = createElementFromMatch(match)
+          ctx.children.splice(i + 1, 0, element, nextSibling)
           i++
         }
       }
@@ -42,37 +43,37 @@ export function createRegexTransformer(
 
 export const DEFAULT_TRANSFORMERS: Transformer<any>[] = [
   createRegexTransformer(REGEX.ITALIC_BOLD, (match) => {
-    const wrapper = document.createElement("b")
+    const element = document.createElement("b")
     const inner = document.createElement("i")
     inner.appendChild(document.createTextNode(match[1]))
-    wrapper.appendChild(inner)
-    return wrapper
+    element.appendChild(inner)
+    return element
   }),
   createRegexTransformer(REGEX.BOLD, (match) => {
-    const wrapper = document.createElement("b")
-    wrapper.appendChild(document.createTextNode(match[1]))
-    return wrapper
+    const element = document.createElement("b")
+    element.appendChild(document.createTextNode(match[1]))
+    return element
   }),
   createRegexTransformer(REGEX.ITALIC, (match) => {
-    const wrapper = document.createElement("i")
-    wrapper.appendChild(document.createTextNode(match[1]))
-    return wrapper
+    const element = document.createElement("i")
+    element.appendChild(document.createTextNode(match[1]))
+    return element
   }),
   createRegexTransformer(REGEX.STRIKE, (match) => {
-    const wrapper = document.createElement("del")
-    wrapper.appendChild(document.createTextNode(match[1]))
-    return wrapper
+    const element = document.createElement("del")
+    element.appendChild(document.createTextNode(match[1]))
+    return element
   }),
   createRegexTransformer(REGEX.CODE, (match) => {
-    const wrapper = document.createElement("code")
-    wrapper.appendChild(document.createTextNode(match[1]))
-    return wrapper
+    const element = document.createElement("code")
+    element.appendChild(document.createTextNode(match[1]))
+    return element
   }),
   createRegexTransformer(REGEX.LINK, (match) => {
-    const wrapper = document.createElement("a")
-    wrapper.appendChild(document.createTextNode(match[1]))
-    wrapper.href = match[2]
-    return wrapper
+    const element = document.createElement("a")
+    element.appendChild(document.createTextNode(match[1]))
+    element.href = match[2]
+    return element
   }),
   // wrap blocks in p tags if they don't already contain a block element
   createBlockTransformer((ctx) => {
