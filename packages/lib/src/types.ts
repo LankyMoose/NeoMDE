@@ -1,24 +1,26 @@
+import type { NeoMDE } from "./index"
+
 export type LineTransformerContext = {
-  content: string
+  line: Line
   children: Node[]
   parentNode?: Element | Text
+  instance: NeoMDE
 }
 
 export type BlockTransformerContext = {
-  lines: string[]
+  lines: Line[]
   children: Node[]
   parentNode?: Element
+  instance: NeoMDE
 }
 
 export type TransformerType = "block" | "line"
 
-export type LineTransformerCallback = (
-  context: LineTransformerContext
-) => LineTransformerContext
+export type LineTransformerCallback = (context: LineTransformerContext) => void
 
 export type BlockTransformerCallback = (
   context: BlockTransformerContext
-) => BlockTransformerContext
+) => void
 
 export type Transformer<T extends TransformerType> = {
   type: T
@@ -49,6 +51,9 @@ export type TransformerContext<T extends TransformerType> = T extends "block"
 
 export type Line = {
   content: string
+  idx: number
+  start: number
+  end: number
 }
 
 export type TransformedLine = {

@@ -24,7 +24,7 @@ export {
   createDefaultTransformers,
   createBlockTransformer,
   createLineTransformer,
-  createRegexTransformer,
+  createTextTransformer,
   MD_REGEX,
 } from "./transformer.js"
 
@@ -35,16 +35,23 @@ export class NeoMDE {
   #transformers: {
     block: Transformer<"block">[]
     line: Transformer<"line">[]
-  } = {
-    block: [],
-    line: [],
   }
   #textarea: HTMLTextAreaElement
   constructor(options: NeoMDEOptions) {
     this.#content = options.initialContent?.trim() || ""
+    this.#transformers = {
+      block: [],
+      line: [],
+    }
     if (options.transformers) {
-      for (const transformer of options.transformers.flat()) {
-        this.#transformers[transformer.type].push(transformer as any)
+      const flattened = options.transformers.flat()
+      for (let i = 0; i < flattened.length; i++) {
+        const transformer = flattened[i]
+        if (transformer.type === "block") {
+          this.#transformers.block.push(transformer as Transformer<"block">)
+        } else if (transformer.type === "line") {
+          this.#transformers.line.push(transformer as Transformer<"line">)
+        }
       }
     }
     this.#output = []
@@ -53,6 +60,45 @@ export class NeoMDE {
 
     this.bindEventListeners()
     this.render()
+  }
+
+  public getContent() {
+    return this.#content
+  }
+  public getContentAtRange(range: { start: number; end: number }) {
+    if (range.start === range.end) {
+      return ""
+    }
+    return this.#content.slice(range.start, range.end)
+  }
+  public setContent(content: string) {
+    if (this.#content === content) {
+      return
+    }
+    this.#content = content
+    this.#textarea.value = content
+    this.render()
+  }
+  public insertContent(offset: number, content: string) {
+    if (offset === 0) {
+      return this.setContent(content + this.#content)
+    }
+    const newContent =
+      this.#content.slice(0, offset) + content + this.#content.slice(offset)
+    this.setContent(newContent)
+  }
+  public setContentAtRange(
+    range: { start: number; end: number },
+    content: string
+  ) {
+    if (range.start === range.end) {
+      return
+    }
+    const newContent =
+      this.#content.slice(0, range.start) +
+      content +
+      this.#content.slice(range.end)
+    this.setContent(newContent)
   }
 
   private bindEventListeners() {
@@ -65,16 +111,8 @@ export class NeoMDE {
     })
   }
 
-  public getContent() {
-    return this.#content
-  }
-  public setContent(content: string) {
-    if (this.#content === content) {
-      return
-    }
-    this.#content = content
-    this.render()
-  }
+  // @ts-ignore
+  private onBeforeRender() {}
 
   private render() {
     if (this.#content.trim() === "") {
@@ -82,10 +120,19 @@ export class NeoMDE {
       this.#displayElement.innerHTML = ""
       return
     }
+
     const blocks: Block[] = []
-    const lines: Line[] = this.#content
-      .split("\n")
-      .map((line) => ({ content: line + "\n" }))
+    const lines: Line[] = []
+    let idx = 0
+    let start = 0
+    let end = 0
+    for (const line of this.#content.split("\n")) {
+      end += line.length
+      lines.push({ content: line, idx, start: start + idx, end: end + idx })
+      start = end
+      idx++
+    }
+
     for (const line of lines) {
       if (line.content.trim() === "") {
         blocks.push({ lines: [] })
@@ -106,9 +153,10 @@ export class NeoMDE {
         let childNodes: Node[] = [document.createTextNode(line.content)]
         // Apply line-level transformations and add to transformed lines
         const transformedLine = transformLine(
-          line.content,
+          line,
           this.#transformers.line,
-          childNodes
+          childNodes,
+          this
         )
         transformedLines.push(transformedLine)
       }
@@ -116,7 +164,8 @@ export class NeoMDE {
       const { output: transformedBlockOutput } = transformBlock(
         block.lines,
         this.#transformers.block,
-        transformedLines
+        transformedLines,
+        this
       )
       if (Array.isArray(transformedBlockOutput)) {
         output.push(

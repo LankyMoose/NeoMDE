@@ -19,6 +19,10 @@ export function App() {
 - [] checkbox
 - [x] checked checkbox
 
+\`\`\`
+console.log("hello world")
+\`\`\`
+
 hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
 
 
@@ -30,7 +34,7 @@ hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
   }, [])
   return (
     <div>
-      <textarea className="p-2 w-full min-h-48 mb-4" ref={textAreaRef} />
+      <textarea className="p-2 w-full min-h-96 mb-4" ref={textAreaRef} />
       <div
         className="prose prose-invert text-2xl p-4 bg-neutral-800 rounded"
         ref={displayElementRef}
