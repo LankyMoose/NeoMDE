@@ -19,6 +19,8 @@ export function App() {
 - [] checkbox
 - [x] checked checkbox
 
+![image](favicon.svg)
+
 \`\`\`
 console.log("hello world")
 \`\`\`

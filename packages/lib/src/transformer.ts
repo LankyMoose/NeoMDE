@@ -18,7 +18,7 @@ export const MD_REGEX = {
   STRIKE: /~~(.*?)~~/,
   CODE: /`([^`]+)`/,
   LINK: /\[(.*?)\]\((.*?)\)/,
-  IMAGE: /!\[Image\]\((.*?)\)\s*(.*)/,
+  IMAGE: /!\[IMAGE\]\((.*?)\)\s*(.*)/i,
 }
 
 const DEFAULT_TRANSFORMERS = {
