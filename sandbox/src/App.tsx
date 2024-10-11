@@ -11,7 +11,11 @@ export function App() {
       includeDefaultTransformers: true,
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
-      initialContent: `hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁 [check out this link](https://github.com/LankyMoose/neo-mde)`,
+      initialContent: `# test _hi_
+      
+      hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
+      
+      [check out this link](https://github.com/LankyMoose/neo-mde)`,
     })
     return () => {
       //mde.destroy()
