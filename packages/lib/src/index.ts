@@ -10,12 +10,9 @@ import {
   DEFAULT_TRANSFORMERS,
   transformBlock,
   transformLine,
-  transformWord,
 } from "./transformer.js"
 
 export type {
-  WordTransformerContext,
-  WordTransformerCallback,
   LineTransformerContext,
   LineTransformerCallback,
   BlockTransformerContext,
@@ -27,7 +24,7 @@ export type {
   NeoMDEOptions,
 } from "./types"
 
-export { createTransformer } from "./transformer.js"
+export { createBlockTransformer, createLineTransformer } from "./transformer.js"
 
 export class NeoMDE {
   #content: string
@@ -36,20 +33,21 @@ export class NeoMDE {
   #transformers: {
     block: Transformer<"block">[]
     line: Transformer<"line">[]
-    word: Transformer<"word">[]
   } = {
     block: [],
     line: [],
-    word: [],
   }
   #textarea: HTMLTextAreaElement
   constructor(options: NeoMDEOptions) {
     this.#content = options.initialContent?.trim() || ""
     if (options.includeDefaultTransformers) {
       this.#transformers = {
-        block: [...DEFAULT_TRANSFORMERS.filter((t) => t.type === "block")],
-        line: [...DEFAULT_TRANSFORMERS.filter((t) => t.type === "line")],
-        word: [...DEFAULT_TRANSFORMERS.filter((t) => t.type === "word")],
+        block: [
+          ...DEFAULT_TRANSFORMERS.filter((t) => t.type === "block"),
+        ] as Transformer<"block">[],
+        line: [
+          ...DEFAULT_TRANSFORMERS.filter((t) => t.type === "line"),
+        ] as Transformer<"line">[],
       }
     }
     if (options.transformers) {
@@ -96,7 +94,6 @@ export class NeoMDE {
     const lines: Line[] = this.#content
       .split("\n")
       .map((line) => ({ content: line + "\n" }))
-    console.log("lines", lines, this.#content)
     for (const line of lines) {
       if (line.content.trim() === "") {
         blocks.push({ lines: [] })
@@ -114,24 +111,12 @@ export class NeoMDE {
       const transformedLines: TransformedLine[] = []
 
       for (const line of block.lines) {
-        const transformedWords: Node[] = []
-        const words = line.content.split(" ")
-
-        for (let i = 0; i < words.length; i++) {
-          let word = words[i]
-          if (i < words.length - 1) {
-            word += " "
-          } else {
-            word = word.trimEnd()
-          }
-          const node = transformWord(word, this.#transformers.word)
-          transformedWords.push(node)
-        }
-
+        let childNodes: Node[] = [document.createTextNode(line.content)]
+        // Apply line-level transformations and add to transformed lines
         const transformedLine = transformLine(
           line.content,
           this.#transformers.line,
-          transformedWords
+          childNodes
         )
         transformedLines.push(transformedLine)
       }

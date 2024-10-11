@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "kaioken"
-import { createTransformer, NeoMDE } from "neo-mde"
+import { NeoMDE } from "neo-mde"
 
 export function App() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
@@ -7,21 +7,11 @@ export function App() {
   useEffect(() => {
     if (!textAreaRef.current || !displayElementRef.current) return
     new NeoMDE({
-      transformers: [
-        createTransformer("word", (ctx) => {
-          if (
-            ctx.content.startsWith("**") &&
-            ctx.content.trimEnd().endsWith("**")
-          ) {
-            ctx.output = document.createElement("strong")
-            ctx.output.textContent = ctx.content.trimEnd().slice(2, -2)
-          }
-          return ctx
-        }),
-      ],
+      transformers: [],
+      includeDefaultTransformers: true,
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
-      initialContent: ``,
+      initialContent: `hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁 [check out this link](https://github.com/LankyMoose/neo-mde)`,
     })
     return () => {
       //mde.destroy()
@@ -29,8 +19,11 @@ export function App() {
   }, [])
   return (
     <div>
-      <textarea className="p-2 w-full min-h-48" ref={textAreaRef} />
-      <div className="prose prose-invert" ref={displayElementRef} />
+      <textarea className="p-2 w-full min-h-48 mb-4" ref={textAreaRef} />
+      <div
+        className="prose prose-invert text-2xl p-4 bg-neutral-800 rounded"
+        ref={displayElementRef}
+      />
     </div>
   )
 }

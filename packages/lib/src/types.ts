@@ -1,24 +1,16 @@
-export type WordTransformerContext = {
-  content: string
-  output?: Element | Text
-}
 export type LineTransformerContext = {
   content: string
   children: Node[]
-  output?: Element | Text
+  parentNode?: Element | Text
 }
 
 export type BlockTransformerContext = {
   lines: string[]
   children: Node[]
-  output?: Element
+  parentNode?: Element
 }
 
-export type TransformerType = "block" | "line" | "word"
-
-export type WordTransformerCallback = (
-  context: WordTransformerContext
-) => WordTransformerContext
+export type TransformerType = "block" | "line"
 
 export type LineTransformerCallback = (
   context: LineTransformerContext
@@ -45,16 +37,12 @@ export type TransformerCallback<T extends TransformerType> = T extends "block"
   ? BlockTransformerCallback
   : T extends "line"
   ? LineTransformerCallback
-  : T extends "word"
-  ? WordTransformerCallback
   : never
 
 export type TransformerContext<T extends TransformerType> = T extends "block"
   ? BlockTransformerContext
   : T extends "line"
   ? LineTransformerContext
-  : T extends "word"
-  ? WordTransformerContext
   : never
 
 export type Line = {
