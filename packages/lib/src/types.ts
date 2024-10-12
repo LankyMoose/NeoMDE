@@ -1,10 +1,27 @@
 import type { NeoMDE } from "./index"
 
+export type TextTransformResult = {
+  result: ParentWithChildrenSlot
+  range: { start: number; end: number }
+  padding: { left: number; right: number }
+  content: string
+}
+
+export type RangeDisplayDefinition = {
+  start: number
+  end: number
+  display: {
+    default: () => Node | null
+    active: () => Node | null
+  }
+}
+
 export type LineTransformerContext = {
   line: Line
-  children: Node[]
   parent?: ParentWithChildrenSlot
   instance: NeoMDE
+  transformResults: TextTransformResult[]
+  defineRangeDisplay: (rangeDisplayDef: RangeDisplayDefinition) => void
 }
 
 export type BlockTransformerContext = {
@@ -55,7 +72,6 @@ export type Line = {
   content: string
   idx: number
   start: number
-  end: number
 }
 
 export type TransformedLine = {

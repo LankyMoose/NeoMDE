@@ -34,15 +34,18 @@ export {
 export const createNeoMDE = (options: NeoMDEOptions) => new NeoMDE(options)
 
 export class NeoMDE {
+  #selectedLines: number[]
   #listeners: {
     [key in NeoEvent]: NeoEventListener<key>[]
   }
   #content: string
   #output: Node[]
-  #displayElement: Element
   #blockProviders: BlockProvider[]
   #textarea: HTMLTextAreaElement
+  #displayElement: Element
+
   constructor(options: NeoMDEOptions) {
+    this.#selectedLines = []
     this.#listeners = {
       beforerender: [],
       render: [],
@@ -78,6 +81,9 @@ export class NeoMDE {
     }
   }
 
+  public getActiveLines(): number[] {
+    return this.#selectedLines
+  }
   public getContent(): string {
     return this.#content
   }
@@ -129,6 +135,36 @@ export class NeoMDE {
     this.#textarea.addEventListener("change", () => {
       this.setContent(this.#textarea.value)
     })
+
+    this.#textarea.addEventListener("selectionchange", (event) => {
+      const target = event.target as HTMLTextAreaElement
+      // Get the start and end positions of the selection
+      const selectionStart = target.selectionStart
+      const selectionEnd = target.selectionEnd
+
+      // Get the lines before and after selection start/end
+      const linesBeforeStart = target.value
+        .substring(0, selectionStart)
+        .split("\n")
+      const linesBeforeEnd = target.value.substring(0, selectionEnd).split("\n")
+
+      // Calculate the range of line numbers affected
+      const startLine = linesBeforeStart.length
+      const endLine = linesBeforeEnd.length
+      const newSelectedLines = []
+      for (let i = startLine - 1; i < endLine; i++) {
+        newSelectedLines.push(i + 1)
+      }
+
+      const linesChanged =
+        newSelectedLines.length !== this.#selectedLines.length ||
+        newSelectedLines.some((line, idx) => line !== this.#selectedLines[idx])
+
+      if (linesChanged) {
+        this.#selectedLines = newSelectedLines
+        this.render()
+      }
+    })
   }
 
   private render(): void {
@@ -160,7 +196,7 @@ export class NeoMDE {
 
     while (currentLineIdx < lines.length) {
       const prevLine = lines[currentLineIdx - 1] as Line | undefined
-      const currentLine = lines[currentLineIdx]
+      const currentLine = lines[currentLineIdx]!
 
       if (!currentProvider) {
         for (const blockProvider of this.#blockProviders) {
@@ -227,14 +263,8 @@ export class NeoMDE {
       ) as Transformer<"block">[]
 
       for (const line of block.lines) {
-        let childNodes: Node[] = [document.createTextNode(line.content)]
         // Apply line-level transformations and add to transformed lines
-        const transformedLine = transformLine(
-          line,
-          lineTransformers,
-          childNodes,
-          this
-        )
+        const transformedLine = transformLine(line, lineTransformers, this)
         transformedLines.push(transformedLine)
       }
 
@@ -274,7 +304,6 @@ export class NeoMDE {
         content: line + "\n",
         idx,
         start: start + idx - 1,
-        end: end + idx - 1,
       })
       start = end
       idx++

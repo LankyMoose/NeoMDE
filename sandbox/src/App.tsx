@@ -12,10 +12,12 @@ export function App() {
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
       initialContent: `
+hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
+
 ### test _italic in heading_
 
-- _**bold italics**_
-- [link](https://github.com/LankyMoose/neo-mde)
+- **_bold italics_**
+- [link test](https://github.com/LankyMoose/neo-mde)
 - \`some code\`
 - [ ] checkbox
 - [x] checked checkbox
@@ -36,9 +38,10 @@ function hello() {
 }
 \`\`\`
 
-hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
+
 
 ![image](http://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg) banana
+
 `,
     })
     return () => {
@@ -49,6 +52,7 @@ hello _**world**_! it's ~~fucking~~ _great_ to be **here** 😁
     <div>
       <textarea className="p-2 w-full min-h-96 mb-4" ref={textAreaRef} />
       <div
+        //contentEditable
         className="prose prose-invert text-2xl p-4 bg-neutral-800 rounded"
         ref={displayElementRef}
       />
