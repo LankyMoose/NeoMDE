@@ -14,7 +14,7 @@ export const MD_REGEX = {
   CODE: /`([^`]+)`/,
   LINK: /\[(.*?)\]\((.*?)\)/,
   IMAGE: /!\[IMAGE\]\((.*?)\)\s*(.*)/i,
-  ORDERED_LIST_ITEM: /(\d+)\. (.*)/,
+  ORDERED_LIST_ITEM: /^\d+\.\s/,
 }
 
 const DEFAULT_TRANSFORMERS = {
@@ -66,7 +66,10 @@ const DEFAULT_TRANSFORMERS = {
   LIST_LINE: createLineTransformer((ctx) => {
     if (ctx.line.content.startsWith("- ")) {
       ctx.parent = { node: document.createElement("li") }
-      if (ctx.line.content.startsWith("- [ ] ")) {
+      const pref = ctx.line.content.substring(0, 6)
+
+      if (pref === "- [ ] " || pref === "- [x] ") {
+        const checked = ctx.line.content[3] === "x"
         ctx.defineRangeDisplay({
           start: 0,
           end: 5,
@@ -75,42 +78,22 @@ const DEFAULT_TRANSFORMERS = {
               const handleChange = () => {
                 const start = ctx.line.start + 3
                 const end = ctx.line.start + 4
-                ctx.instance.setContentAtRange({ start, end }, "x")
+                ctx.instance.setContentAtRange(
+                  { start, end },
+                  checked ? " " : "x"
+                )
               }
               const checkbox = Object.assign(document.createElement("input"), {
                 type: "checkbox",
                 onchange: handleChange,
+                checked,
               })
               ctx.instance.once("beforerender", () => {
                 checkbox.removeEventListener("change", handleChange)
               })
               return checkbox
             },
-            active: () => document.createTextNode("- [ ]"),
-          },
-        })
-      } else if (ctx.line.content.startsWith("- [x] ")) {
-        ctx.defineRangeDisplay({
-          start: 0,
-          end: 5,
-          display: {
-            default: () => {
-              const handleChange = () => {
-                const start = ctx.line.start + 3
-                const end = ctx.line.start + 4
-                ctx.instance.setContentAtRange({ start, end }, " ")
-              }
-              const checkbox = Object.assign(document.createElement("input"), {
-                type: "checkbox",
-                checked: true,
-                onchange: handleChange,
-              })
-              ctx.instance.once("beforerender", () => {
-                checkbox.removeEventListener("change", handleChange)
-              })
-              return checkbox
-            },
-            active: () => document.createTextNode("- [x]"),
+            active: () => document.createTextNode(pref),
           },
         })
       } else {
@@ -125,15 +108,15 @@ const DEFAULT_TRANSFORMERS = {
       }
     }
     const numericPrefixMatch = MD_REGEX.ORDERED_LIST_ITEM.exec(ctx.line.content)
-    if (numericPrefixMatch === null) return
+    if (numericPrefixMatch === null || !numericPrefixMatch[0]) return
 
     ctx.parent = { node: document.createElement("li") }
     ctx.defineRangeDisplay({
       start: 0,
-      end: (numericPrefixMatch[1] || "1").length + 1,
+      end: numericPrefixMatch[0].length,
       display: {
         default: () => null,
-        active: () => null,
+        active: () => document.createTextNode(numericPrefixMatch[0]),
       },
     })
   }),
