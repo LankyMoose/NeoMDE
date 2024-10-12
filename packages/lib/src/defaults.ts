@@ -17,6 +17,9 @@ export const MD_REGEX = {
   ORDERED_LIST_ITEM: /^\d+\.\s/,
 }
 
+const CHECKBOX_STRING = "- [ ] "
+const CHECKBOX_STRING_X = "- [x] "
+
 const DEFAULT_TRANSFORMERS = {
   // wrap lines in heading tags if they start with 1-6 #s
   HEADING_LINE: createLineTransformer((ctx) => {
@@ -64,59 +67,55 @@ const DEFAULT_TRANSFORMERS = {
   }),
   // wrap lines in li tags if they start with "- ", handle checkboxes
   LIST_LINE: createLineTransformer((ctx) => {
-    if (ctx.line.content.startsWith("- ")) {
-      ctx.parent = { node: document.createElement("li") }
-      const pref = ctx.line.content.substring(0, 6)
-
-      if (pref === "- [ ] " || pref === "- [x] ") {
-        const checked = ctx.line.content[3] === "x"
-        ctx.defineRangeDisplay({
-          start: 0,
-          end: 5,
-          display: {
-            default: () => {
-              const handleChange = () => {
-                const start = ctx.line.start + 3
-                const end = ctx.line.start + 4
-                ctx.instance.setContentAtRange(
-                  { start, end },
-                  checked ? " " : "x"
-                )
-              }
-              const checkbox = Object.assign(document.createElement("input"), {
-                type: "checkbox",
-                onchange: handleChange,
-                checked,
-              })
-              ctx.instance.once("beforerender", () => {
-                checkbox.removeEventListener("change", handleChange)
-              })
-              return checkbox
-            },
-            active: () => document.createTextNode(pref),
-          },
-        })
-      } else {
-        ctx.defineRangeDisplay({
-          start: 0,
-          end: 2,
-          display: {
-            default: () => null,
-            active: () => document.createTextNode("- "),
-          },
-        })
-      }
-    }
     const numericPrefixMatch = MD_REGEX.ORDERED_LIST_ITEM.exec(ctx.line.content)
-    if (numericPrefixMatch === null || !numericPrefixMatch[0]) return
-
+    if (numericPrefixMatch?.[0]) {
+      ctx.parent = { node: document.createElement("li") }
+      ctx.defineRangeDisplay({
+        start: 0,
+        end: numericPrefixMatch[0].length,
+        display: {
+          default: () => null,
+          active: () => document.createTextNode(numericPrefixMatch[0]),
+        },
+      })
+      return
+    }
+    if (ctx.line.content.substring(0, 2) !== "- ") return
     ctx.parent = { node: document.createElement("li") }
+    const pref = ctx.line.content.substring(0, 6)
+    if (pref !== CHECKBOX_STRING && pref !== CHECKBOX_STRING_X) {
+      ctx.defineRangeDisplay({
+        start: 0,
+        end: 2,
+        display: {
+          default: () => null,
+          active: () => document.createTextNode("- "),
+        },
+      })
+      return
+    }
+    const checked = pref === CHECKBOX_STRING_X
     ctx.defineRangeDisplay({
       start: 0,
-      end: numericPrefixMatch[0].length,
+      end: 5,
       display: {
-        default: () => null,
-        active: () => document.createTextNode(numericPrefixMatch[0]),
+        default: () => {
+          const handleChange = () => {
+            const start = ctx.line.start + 3
+            const end = ctx.line.start + 4
+            ctx.instance.setContentAtRange({ start, end }, checked ? " " : "x")
+          }
+          const checkbox = Object.assign(document.createElement("input"), {
+            type: "checkbox",
+            onchange: handleChange,
+            checked,
+          })
+          ctx.instance.once("beforerender", () => {
+            checkbox.removeEventListener("change", handleChange)
+          })
+          return checkbox
+        },
+        active: () => document.createTextNode(pref),
       },
     })
   }),
