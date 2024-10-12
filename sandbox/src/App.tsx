@@ -38,11 +38,8 @@ function hello() {
 }
 \`\`\`
 
-
-
 ![image](http://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg) banana
-
-`,
+`.trimStart(),
     })
     return () => {
       //mde.destroy()

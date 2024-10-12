@@ -51,7 +51,7 @@ export class NeoMDE {
       render: [],
       change: [],
     }
-    this.#content = options.initialContent?.trim() || ""
+    this.#content = options.initialContent || ""
     const blockProviders = options.blockProviders ?? defaultBlockProviders()
     this.#blockProviders = blockProviders.flat()
     this.#output = []
@@ -180,7 +180,7 @@ export class NeoMDE {
   }
 
   private render_impl() {
-    if (this.#content.trim() === "") {
+    if (this.#content === "") {
       this.#output = []
       this.#displayElement.innerHTML = ""
       return

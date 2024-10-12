@@ -101,22 +101,6 @@ export function transformLine(
   let textOffset = 0
   let resultStack: TextTransformResult[] = []
 
-  const drainStack = () => {
-    let currentResult = resultStack.pop()
-    let parentResult = resultStack.pop()
-    while (currentResult) {
-      textOffset = currentResult.range.end
-      if (!parentResult) {
-        assembledChildren.push(currentResult.result.node)
-        currentResult = undefined
-        break
-      }
-      insertNodeToTextTransformResult(parentResult, currentResult.result.node)
-      currentResult = parentResult
-      parentResult = resultStack.pop()
-    }
-  }
-
   let content = ctx.line.content
   const activeLines = ctx.instance.getActiveLines()
 
@@ -139,16 +123,31 @@ export function transformLine(
     }
     let currentResult = resultStack[resultStack.length - 1]
     const nextResult = sortedTransformResults.shift()
+    // if we have no more results, finalize our current stack accumulation / remaining text
     if (!nextResult) {
       // finalize
       if (currentResult) {
-        const text = content.slice(
-          textOffset,
-          currentResult.range.end - currentResult.padding.right
-        )
-        const textNode = document.createTextNode(text)
-        insertNodeToTextTransformResult(currentResult, textNode)
-        drainStack()
+        currentResult = resultStack.pop()
+        let parentResult = resultStack.pop()
+        while (currentResult) {
+          const text = content.slice(
+            textOffset,
+            currentResult.range.end - currentResult.padding.right
+          )
+          const textNode = document.createTextNode(text)
+          insertNodeToTextTransformResult(currentResult, textNode)
+          if (parentResult) {
+            insertNodeToTextTransformResult(
+              parentResult,
+              currentResult.result.node
+            )
+          } else {
+            assembledChildren.push(currentResult.result.node)
+          }
+          textOffset = currentResult.range.end
+          currentResult = parentResult
+          parentResult = resultStack.pop()
+        }
         currentResult = undefined
         const remainingText = content.slice(textOffset)
         if (remainingText.length > 0) {
@@ -161,25 +160,62 @@ export function transformLine(
       }
       break
     }
-    if (currentResult && nextResult.range.start > currentResult.range.end) {
-      // drain stack
-      const text = content.slice(
-        currentResult.range.start + currentResult.padding.left,
-        currentResult.range.end - currentResult.padding.right
-      )
-      const textNode = document.createTextNode(text)
-      insertNodeToTextTransformResult(currentResult, textNode)
-      drainStack()
-      currentResult = undefined
+    // if we've reached the end of the current result, finalize it
+    // and continue doing finalizing parents while this condition is true
+    while (currentResult && nextResult.range.start > currentResult.range.end) {
+      const textEnd = currentResult.range.end - currentResult.padding.right
+      const text = content.slice(textOffset, textEnd)
+      if (text.length) {
+        const textNode = document.createTextNode(text)
+        insertNodeToTextTransformResult(currentResult, textNode)
+      }
+      textOffset = currentResult.range.end
+      currentResult = resultStack.pop()!
+      const parentResult = resultStack[resultStack.length - 1]
+      if (parentResult) {
+        insertNodeToTextTransformResult(parentResult, currentResult.result.node)
+        currentResult = parentResult
+      } else {
+        assembledChildren.push(currentResult.result.node)
+        currentResult = undefined
+      }
     }
+
     if (textOffset < nextResult.range.start + nextResult.padding.left) {
       // append to stack
-      const text = content.slice(textOffset, nextResult.range.start)
-      const textNode = document.createTextNode(text)
-      if (currentResult) {
-        insertNodeToTextTransformResult(currentResult, textNode)
-      } else {
-        assembledChildren.push(textNode)
+      const textEnd = currentResult
+        ? nextResult.range.start //- currentResult.padding.left
+        : nextResult.range.start
+
+      const text = content.slice(textOffset, textEnd)
+      if (text.length) {
+        const textNode = document.createTextNode(text)
+        if (currentResult) {
+          insertNodeToTextTransformResult(currentResult, textNode)
+        } else {
+          assembledChildren.push(textNode)
+        }
+      }
+      if (
+        currentResult &&
+        text.length ===
+          currentResult.content.length -
+            currentResult.padding.left -
+            currentResult.padding.right
+      ) {
+        // finalize current
+        currentResult = resultStack.pop()!
+        const parentResult = resultStack[resultStack.length - 1]
+        if (parentResult) {
+          insertNodeToTextTransformResult(
+            parentResult,
+            currentResult.result.node
+          )
+          currentResult = parentResult
+        } else {
+          assembledChildren.push(currentResult.result.node)
+          currentResult = undefined
+        }
       }
       textOffset = nextResult.range.start + nextResult.padding.left
     }
@@ -189,7 +225,7 @@ export function transformLine(
   if (ctx.parent?.node) {
     const mountNode = ctx.parent.slot ?? ctx.parent.node
     mountNode.append(...assembledChildren)
-    mountNode.normalize()
+    //mountNode.normalize()
   }
 
   return {
