@@ -149,10 +149,21 @@ export const TRANSFORMERS = {
     if (!ctx.line.content.startsWith("![")) return
     const match = MD_REGEX.IMAGE.exec(ctx.line.content)
     if (!match || !match[1]) return
-    const img = document.createElement("img")
-    img.src = match[1]
-    img.title = match[2] ?? ""
-    ctx.parent = { node: img }
+    const src = match[1]
+    const title = match[2] ?? ""
+    ctx.defineRangeDisplay({
+      start: 0,
+      end: match[0].length,
+      display: {
+        default: () => {
+          return Object.assign(document.createElement("img"), {
+            src,
+            title,
+          })
+        },
+        active: () => document.createTextNode(match[0]),
+      },
+    })
   }),
   // wrap code blocks in pre tags
   CODE_BLOCK: createBlockTransformer((ctx) => {
