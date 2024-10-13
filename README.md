@@ -1,4 +1,4 @@
-# neo-mde
+# NeoMDE
 
 Development monorepo template for **NeoMDE**.
 
