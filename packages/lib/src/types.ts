@@ -1,5 +1,15 @@
 import type { NeoMDE } from "./index"
 
+export type NeoNode = Node & {
+  $neo: NeoNodeInformation
+}
+
+export type NeoNodeInformation = {
+  range: { start: number; end: number }
+  content: string
+  lineIdx: number
+}
+
 export type TextTransformResult = {
   result: ParentWithChildrenSlot
   range: { start: number; end: number }
@@ -51,7 +61,7 @@ export type Transformer<T extends TransformerType> = {
 
 export type NeoMDEOptions = {
   textarea: HTMLTextAreaElement
-  displayElement: Element
+  displayElement: HTMLElement
   initialContent?: string
   blockProviders?: (BlockProvider | BlockProvider[])[]
 }

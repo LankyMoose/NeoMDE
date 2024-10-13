@@ -1,4 +1,5 @@
 import type { NeoMDE } from "./index"
+import { setNeoNodeInfo } from "./node"
 import type {
   BlockTransformerContext,
   Line,
@@ -13,6 +14,7 @@ import type {
   ParentWithChildrenSlot,
   TextTransformResult,
   RangeDisplayDefinition,
+  Block,
 } from "./types"
 
 export const createBlockProvider = (
@@ -115,6 +117,11 @@ export function transformLine(
             ? rangeDisplayDef.display.active()
             : rangeDisplayDef.display.default()
         if (rendered !== null) {
+          setNeoNodeInfo(rendered, {
+            content: content.slice(rangeDisplayDef.start, rangeDisplayDef.end),
+            range: { start: rangeDisplayDef.start, end: rangeDisplayDef.end },
+            lineIdx: line.idx,
+          })
           assembledChildren.push(rendered)
         }
         textOffset += rangeDisplayDef.end - rangeDisplayDef.start
@@ -130,11 +137,14 @@ export function transformLine(
         currentResult = resultStack.pop()
         let parentResult = resultStack.pop()
         while (currentResult) {
-          const text = content.slice(
-            textOffset,
-            currentResult.range.end - currentResult.padding.right
-          )
+          const textEnd = currentResult.range.end - currentResult.padding.right
+          const text = content.slice(textOffset, textEnd)
           const textNode = document.createTextNode(text)
+          setNeoNodeInfo(textNode, {
+            content: text,
+            range: { start: textOffset, end: textEnd },
+            lineIdx: line.idx,
+          })
           insertNodeToTextTransformResult(currentResult, textNode)
           if (parentResult) {
             insertNodeToTextTransformResult(
@@ -151,11 +161,25 @@ export function transformLine(
         currentResult = undefined
         const remainingText = content.slice(textOffset)
         if (remainingText.length > 0) {
-          assembledChildren.push(document.createTextNode(remainingText))
+          const textNode = document.createTextNode(remainingText)
+          setNeoNodeInfo(textNode, {
+            content: remainingText,
+            range: {
+              start: textOffset,
+              end: textOffset + remainingText.length,
+            },
+            lineIdx: line.idx,
+          })
+          assembledChildren.push(textNode)
         }
       } else {
         const text = content.slice(textOffset)
         const textNode = document.createTextNode(text)
+        setNeoNodeInfo(textNode, {
+          content: text,
+          range: { start: textOffset, end: textOffset + text.length },
+          lineIdx: line.idx,
+        })
         assembledChildren.push(textNode)
       }
       break
@@ -167,6 +191,11 @@ export function transformLine(
       const text = content.slice(textOffset, textEnd)
       if (text.length) {
         const textNode = document.createTextNode(text)
+        setNeoNodeInfo(textNode, {
+          content: text,
+          range: { start: textOffset, end: textEnd },
+          lineIdx: line.idx,
+        })
         insertNodeToTextTransformResult(currentResult, textNode)
       }
       textOffset = currentResult.range.end
@@ -190,6 +219,11 @@ export function transformLine(
       const text = content.slice(textOffset, textEnd)
       if (text.length) {
         const textNode = document.createTextNode(text)
+        setNeoNodeInfo(textNode, {
+          content: text,
+          range: { start: textOffset, end: textEnd },
+          lineIdx: line.idx,
+        })
         if (currentResult) {
           insertNodeToTextTransformResult(currentResult, textNode)
         } else {
@@ -234,7 +268,7 @@ export function transformLine(
 }
 
 export function transformBlock(
-  lines: Line[],
+  block: Block,
   transformers: Transformer<"block">[],
   children: TransformedLine[],
   instance: NeoMDE
@@ -242,7 +276,7 @@ export function transformBlock(
   const transformed = transformers.reduce<BlockTransformerContext>(
     (ctx, { transform }) => (transform(ctx), ctx),
     {
-      lines,
+      lines: block.lines,
       children: children.map((line) => line.output).flat(),
       instance,
     }

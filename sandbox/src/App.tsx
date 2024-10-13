@@ -47,7 +47,7 @@ function hello() {
     <div>
       <textarea className="p-2 w-full min-h-96 mb-4" ref={textAreaRef} />
       <div
-        //contentEditable
+        contentEditable
         className="prose prose-invert text-2xl p-4 bg-neutral-800 rounded"
         ref={displayElementRef}
       />

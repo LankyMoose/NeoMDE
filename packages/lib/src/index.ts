@@ -12,6 +12,7 @@ import {
 
 import { transformBlock, transformLine } from "./transformer.js"
 import defaultBlockProviders from "./defaults.js"
+import { getNeoNodeInfo } from "./node"
 
 export type {
   LineTransformerContext,
@@ -33,6 +34,8 @@ export {
 
 export const createNeoMDE = (options: NeoMDEOptions) => new NeoMDE(options)
 
+type ValidSelection = Omit<Selection, "anchorNode"> & { anchorNode: Node }
+
 export class NeoMDE {
   #onDestroyed: (() => void)[]
   #selectedLines: number[]
@@ -43,7 +46,7 @@ export class NeoMDE {
   #output: Node[]
   #blockProviders: BlockProvider[]
   #textarea: HTMLTextAreaElement
-  #displayElement: Element
+  #displayElement: HTMLElement
 
   constructor(options: NeoMDEOptions) {
     this.#onDestroyed = []
@@ -137,6 +140,45 @@ export class NeoMDE {
   }
 
   private bindEventListeners(): void {
+    const el = this.#displayElement
+
+    const setSelectedLines = (selection: ValidSelection) => {
+      const anchorNode = selection.anchorNode
+      const info = getNeoNodeInfo(anchorNode)
+      console.log("setSelectedLines", selection, info)
+    }
+
+    const getSelection = (): ValidSelection | null => {
+      const sel = document.getSelection()
+      if (sel === null || sel.anchorNode === null) return null
+      if (!el.contains(sel.anchorNode)) return null
+      return sel as ValidSelection
+    }
+
+    const handleMouseMove = () => {
+      const sel = getSelection()
+      if (sel === null) return
+      setSelectedLines(sel as ValidSelection)
+    }
+    el.addEventListener("mousedown", (e) => {
+      const sel = getSelection()
+      if (sel !== null) setSelectedLines(sel)
+      if (e.button !== 0) return
+      console.log("l mdown")
+      el.addEventListener("mousemove", handleMouseMove)
+    })
+    el.addEventListener("mouseup", (e) => {
+      if (e.button !== 0) return
+      console.log("l mup")
+      const sel = getSelection()
+      if (sel !== null) setSelectedLines(sel)
+      el.removeEventListener("mousemove", handleMouseMove)
+    })
+
+    // el.addEventListener("keyup", checkSelection)
+    // el.addEventListener("input", checkSelection)
+    // el.addEventListener("paste", checkSelection)
+
     const handleChange = () => {
       this.setContent(this.#textarea.value)
     }
@@ -287,7 +329,7 @@ export class NeoMDE {
       }
 
       const { output: transformedBlockOutput } = transformBlock(
-        block.lines,
+        block,
         blockTransformers,
         transformedLines,
         this
