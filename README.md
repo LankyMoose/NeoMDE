@@ -1,14 +1,8 @@
-# neo-mde
+# NeoMDE
 
-Development monorepo template for **neo-mde**.
+Development monorepo for **NeoMDE**.
 
-Get started by running
-
-```bash
-node setup -p packagename -g mygithubusername -e me@hotmail.com
-# OR
-node setup --package packagename --github mygithubusername --email me@hotmail.com
-```
+This project aims to fill a void in the space of markdown editors, enabling fully configurable DOM generation.
 
 ## Structure
 
@@ -16,7 +10,7 @@ node setup --package packagename --github mygithubusername --email me@hotmail.co
   - Contains workflows used by GitHub Actions.
 - `packages`
   - Contains the individual packages managed in the monorepo.
-  - [neo-mde](https://github.com/LankyMoose/neo-mde/blob/main/packages/lib)
+  - [neo-mde](https://github.com/LankyMoose/neomde/blob/main/packages/lib)
 - `sandbox`
   - Contains example applications and random tidbits.
 
