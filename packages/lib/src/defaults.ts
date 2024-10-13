@@ -191,8 +191,8 @@ const DEFAULT_BLOCK_PROVIDERS = {
     transformers: [TRANSFORMERS.CODE_BLOCK],
   }),
   GENERIC_BLOCK: createBlockProvider({
-    start: "\n",
-    end: "\n",
+    start: "",
+    end: "",
     useEndOfPrevAsStartOfNext: true,
     transformers: [
       TRANSFORMERS.PARAGRAPH_BLOCK,

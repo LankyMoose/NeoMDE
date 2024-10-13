@@ -224,12 +224,15 @@ export function transformLine(
 
   if (ctx.parent?.node) {
     const mountNode = ctx.parent.slot ?? ctx.parent.node
-    mountNode.append(...assembledChildren)
+    mountNode.append(...assembledChildren, document.createTextNode("\n"))
     //mountNode.normalize()
   }
 
   return {
-    output: ctx.parent?.node ?? assembledChildren,
+    output: ctx.parent?.node ?? [
+      ...assembledChildren,
+      document.createTextNode("\n"),
+    ],
   }
 }
 

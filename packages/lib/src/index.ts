@@ -207,12 +207,12 @@ export class NeoMDE {
     const blocks: Block[] = []
     const lines = this.parseLines()
 
-    let currentLineIdx = 0
+    let currentLineIdx = 1
     let prevProvider: BlockProvider | undefined = undefined
     let currentProvider: BlockProvider | undefined = undefined
     let currentBlock: Block | undefined = undefined
 
-    while (currentLineIdx < lines.length) {
+    main: while (currentLineIdx < lines.length) {
       const prevLine = lines[currentLineIdx - 1] as Line | undefined
       const currentLine = lines[currentLineIdx]!
 
@@ -248,15 +248,30 @@ export class NeoMDE {
         currentLineIdx++
         continue
       }
-
-      if (currentLine.content === currentProvider.end) {
-        prevProvider = currentProvider as BlockProvider | undefined
-        currentBlock!.endLine = currentLine
-        blocks.push(currentBlock!)
-        currentBlock = undefined
-        currentProvider = undefined
-        currentLineIdx++
-        continue
+      if (currentProvider && currentBlock) {
+        if (currentLine.content === currentProvider.end) {
+          prevProvider = currentProvider as BlockProvider | undefined
+          currentBlock!.endLine = currentLine
+          blocks.push(currentBlock!)
+          currentBlock = undefined
+          currentProvider = undefined
+          currentLineIdx++
+          continue
+        }
+        if (currentBlock.lines.length === 0) {
+          // check if we are at the start of a block
+          for (const blockProvider of this.#blockProviders) {
+            if (currentLine.content !== blockProvider.start) continue
+            currentProvider = blockProvider
+            currentBlock = {
+              provider: blockProvider,
+              lines: [],
+              startLine: currentLine,
+            }
+            currentLineIdx++
+            continue main
+          }
+        }
       }
 
       currentBlock!.lines.push(currentLine)
@@ -319,7 +334,7 @@ export class NeoMDE {
     for (const line of splitContent) {
       end += line.length
       lines.push({
-        content: line + "\n",
+        content: line,
         idx,
         start: start + idx - 1,
       })
