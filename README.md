@@ -1,8 +1,8 @@
 # NeoMDE
 
-Development monorepo template for **NeoMDE**.
+Development monorepo for **NeoMDE**.
 
-Get started by running
+This project aims to fill a void in the space of markdown editors, enabling fully configurable DOM generation.
 
 ## Structure
 
