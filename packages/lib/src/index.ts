@@ -34,6 +34,7 @@ export {
 export const createNeoMDE = (options: NeoMDEOptions) => new NeoMDE(options)
 
 export class NeoMDE {
+  #onDestroyed: (() => void)[]
   #selectedLines: number[]
   #listeners: {
     [key in NeoEvent]: NeoEventListener<key>[]
@@ -45,6 +46,7 @@ export class NeoMDE {
   #displayElement: Element
 
   constructor(options: NeoMDEOptions) {
+    this.#onDestroyed = []
     this.#selectedLines = []
     this.#listeners = {
       beforerender: [],
@@ -52,14 +54,21 @@ export class NeoMDE {
       change: [],
     }
     this.#content = options.initialContent || ""
-    const blockProviders = options.blockProviders ?? defaultBlockProviders()
-    this.#blockProviders = blockProviders.flat()
     this.#output = []
+    this.#blockProviders = (
+      options.blockProviders ?? defaultBlockProviders()
+    ).flat()
     this.#textarea = options.textarea
     this.#displayElement = options.displayElement
 
     this.bindEventListeners()
     this.render()
+  }
+
+  public destroy(): void {
+    while (this.#onDestroyed.length) {
+      this.#onDestroyed.pop()!()
+    }
   }
 
   public on<T extends NeoEvent>(type: T, callback: NeoEventCallback<T>): void {
@@ -128,15 +137,13 @@ export class NeoMDE {
   }
 
   private bindEventListeners(): void {
-    this.#textarea.addEventListener("input", () => {
+    const handleChange = () => {
       this.setContent(this.#textarea.value)
-    })
+    }
+    this.#textarea.addEventListener("input", handleChange)
+    this.#textarea.addEventListener("change", handleChange)
 
-    this.#textarea.addEventListener("change", () => {
-      this.setContent(this.#textarea.value)
-    })
-
-    this.#textarea.addEventListener("selectionchange", (event) => {
+    const handleSelectionChange = (event: Event) => {
       const target = event.target as HTMLTextAreaElement
       // Get the start and end positions of the selection
       const selectionStart = target.selectionStart
@@ -164,6 +171,17 @@ export class NeoMDE {
         this.#selectedLines = newSelectedLines
         this.render()
       }
+    }
+
+    this.#textarea.addEventListener("selectionchange", handleSelectionChange)
+
+    this.#onDestroyed.push(() => {
+      this.#textarea.removeEventListener("input", handleChange)
+      this.#textarea.removeEventListener("change", handleChange)
+      this.#textarea.removeEventListener(
+        "selectionchange",
+        handleSelectionChange
+      )
     })
   }
 

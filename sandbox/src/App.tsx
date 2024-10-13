@@ -7,7 +7,7 @@ export function App() {
   const displayElementRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!textAreaRef.current || !displayElementRef.current) return
-    new NeoMDE({
+    const mde = new NeoMDE({
       blockProviders: [defaultBlockProviders()],
       textarea: textAreaRef.current,
       displayElement: displayElementRef.current,
@@ -41,9 +41,7 @@ function hello() {
 ![image](http://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg) banana
 `.trimStart(),
     })
-    return () => {
-      //mde.destroy()
-    }
+    return () => mde.destroy()
   }, [])
   return (
     <div>
