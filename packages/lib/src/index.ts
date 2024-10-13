@@ -207,13 +207,13 @@ export class NeoMDE {
     const blocks: Block[] = []
     const lines = this.parseLines()
 
-    let currentLineIdx = 1
+    let currentLineIdx = 0
     let prevProvider: BlockProvider | undefined = undefined
     let currentProvider: BlockProvider | undefined = undefined
     let currentBlock: Block | undefined = undefined
 
     main: while (currentLineIdx < lines.length) {
-      const prevLine = lines[currentLineIdx - 1] as Line | undefined
+      const prevLine = lines[currentLineIdx - 1]
       const currentLine = lines[currentLineIdx]!
 
       if (!currentProvider) {
