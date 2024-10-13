@@ -10,7 +10,7 @@ This project aims to fill a void in the space of markdown editors, enabling full
   - Contains workflows used by GitHub Actions.
 - `packages`
   - Contains the individual packages managed in the monorepo.
-  - [neo-mde](https://github.com/LankyMoose/neo-mde/blob/main/packages/lib)
+  - [neo-mde](https://github.com/LankyMoose/neomde/blob/main/packages/lib)
 - `sandbox`
   - Contains example applications and random tidbits.
 
