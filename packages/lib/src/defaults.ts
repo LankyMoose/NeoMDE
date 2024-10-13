@@ -1,10 +1,10 @@
+import type { BlockProvider } from "./types"
 import {
   createBlockProvider,
   createBlockTransformer,
   createLineTransformer,
   createTextTransformer,
 } from "./transformer.js"
-import { BlockProvider } from "./types.js"
 import { isBlockElement } from "./utils.js"
 
 export const MD_REGEX = {
@@ -20,7 +20,7 @@ export const MD_REGEX = {
 const CHECKBOX_STRING = "- [ ] "
 const CHECKBOX_STRING_X = "- [x] "
 
-const DEFAULT_TRANSFORMERS = {
+export const TRANSFORMERS = {
   // wrap lines in heading tags if they start with 1-6 #s
   HEADING_LINE: createLineTransformer((ctx) => {
     let i = 0
@@ -65,36 +65,25 @@ const DEFAULT_TRANSFORMERS = {
       },
     })
   }),
-  // wrap lines in li tags if they start with "- ", handle checkboxes
-  LIST_LINE: createLineTransformer((ctx) => {
+  // wrap lines in li tags if they start with digits + ".", eg. "1. "
+  LIST_LINE_NUMERIC: createLineTransformer((ctx) => {
     const numericPrefixMatch = MD_REGEX.ORDERED_LIST_ITEM.exec(ctx.line.content)
-    if (numericPrefixMatch?.[0]) {
-      ctx.parent = { node: document.createElement("li") }
-      ctx.defineRangeDisplay({
-        start: 0,
-        end: numericPrefixMatch[0].length,
-        display: {
-          default: () => null,
-          active: () => document.createTextNode(numericPrefixMatch[0]),
-        },
-      })
-      return
-    }
-    if (ctx.line.content.substring(0, 2) !== "- ") return
+    if (!numericPrefixMatch?.[0]) return
     ctx.parent = { node: document.createElement("li") }
+    ctx.defineRangeDisplay({
+      start: 0,
+      end: numericPrefixMatch[0].length,
+      display: {
+        default: () => null,
+        active: () => document.createTextNode(numericPrefixMatch[0]),
+      },
+    })
+  }),
+  LIST_LINE_CHECKBOX: createLineTransformer((ctx) => {
     const pref = ctx.line.content.substring(0, 6)
-    if (pref !== CHECKBOX_STRING && pref !== CHECKBOX_STRING_X) {
-      ctx.defineRangeDisplay({
-        start: 0,
-        end: 2,
-        display: {
-          default: () => null,
-          active: () => document.createTextNode("- "),
-        },
-      })
-      return
-    }
+    if (pref !== CHECKBOX_STRING && pref !== CHECKBOX_STRING_X) return
     const checked = pref === CHECKBOX_STRING_X
+    ctx.parent = { node: document.createElement("li") }
     ctx.defineRangeDisplay({
       start: 0,
       end: 5,
@@ -116,6 +105,18 @@ const DEFAULT_TRANSFORMERS = {
           return checkbox
         },
         active: () => document.createTextNode(pref),
+      },
+    })
+  }),
+  LIST_LINE: createLineTransformer((ctx) => {
+    if (ctx.line.content.substring(0, 2) !== "- ") return
+    ctx.parent = { node: document.createElement("li") }
+    ctx.defineRangeDisplay({
+      start: 0,
+      end: 2,
+      display: {
+        default: () => null,
+        active: () => document.createTextNode("- "),
       },
     })
   }),
@@ -181,30 +182,36 @@ const DEFAULT_TRANSFORMERS = {
       return { node: element }
     }),
   },
-}
+} as const
 
-export const GENERIC_BLOCK_TRANSFORMERS = [
-  DEFAULT_TRANSFORMERS.PARAGRAPH_BLOCK,
-  DEFAULT_TRANSFORMERS.HEADING_LINE,
-  DEFAULT_TRANSFORMERS.LIST_LINE,
-  DEFAULT_TRANSFORMERS.LIST_BLOCK,
-  DEFAULT_TRANSFORMERS.IMAGE_LINE,
-  DEFAULT_TRANSFORMERS.BLOCKQUOTE_LINE,
-  DEFAULT_TRANSFORMERS.HR_LINE,
-  Object.values(DEFAULT_TRANSFORMERS.TEXT),
-]
-
-export default function defaultBlockProviders(): BlockProvider[] {
-  const codeBlockProvider = createBlockProvider({
-    start: "```\n",
-    end: "```\n",
-    transformers: [DEFAULT_TRANSFORMERS.CODE_BLOCK],
-  })
-  const genericBlockProvider = createBlockProvider({
+const DEFAULT_BLOCK_PROVIDERS = {
+  CODE_BLOCK: createBlockProvider({
+    start: "```",
+    end: "```",
+    transformers: [TRANSFORMERS.CODE_BLOCK],
+  }),
+  GENERIC_BLOCK: createBlockProvider({
     start: "\n",
     end: "\n",
     useEndOfPrevAsStartOfNext: true,
-    transformers: GENERIC_BLOCK_TRANSFORMERS,
-  })
-  return [codeBlockProvider, genericBlockProvider]
+    transformers: [
+      TRANSFORMERS.PARAGRAPH_BLOCK,
+      TRANSFORMERS.HEADING_LINE,
+      TRANSFORMERS.LIST_LINE_CHECKBOX,
+      TRANSFORMERS.LIST_LINE_NUMERIC,
+      TRANSFORMERS.LIST_LINE,
+      TRANSFORMERS.LIST_BLOCK,
+      TRANSFORMERS.IMAGE_LINE,
+      TRANSFORMERS.BLOCKQUOTE_LINE,
+      TRANSFORMERS.HR_LINE,
+      Object.values(TRANSFORMERS.TEXT),
+    ],
+  }),
+}
+
+export default function defaultBlockProviders(): BlockProvider[] {
+  return [
+    DEFAULT_BLOCK_PROVIDERS.CODE_BLOCK,
+    DEFAULT_BLOCK_PROVIDERS.GENERIC_BLOCK,
+  ]
 }
